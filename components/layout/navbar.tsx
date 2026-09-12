@@ -28,6 +28,7 @@ export function Navbar() {
             ["Explorar", "/explorar"],
             ["Planejar", "/planejar"],
             ["Roteiros", "/roteiros"],
+            ["Ofertas", "/ofertas"],
             ["Preços", "/precos"],
           ].map(([title, href]) => (
             <Link
@@ -37,7 +38,7 @@ export function Navbar() {
               href={href}
             >
               {title}
-              {title === "Roteiros" && <span className="tiny-badge">NOVO</span>}
+              {title === "Ofertas" && <span className="tiny-badge">NOVO</span>}
             </Link>
           ))}
         </nav>
@@ -78,6 +79,7 @@ export function Footer() {
             <strong>Explore a Voyra</strong>
             <Link href="/explorar">Destinos</Link>
             <Link href="/roteiros">Roteiros da comunidade</Link>
+            <Link href="/ofertas">Passagens e hospedagem</Link>
             <Link href="/precos">Nossos planos</Link>
           </div>
           <div>
