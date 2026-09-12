@@ -128,6 +128,7 @@ export function Itinerary({ trip }: { trip: Trip }) {
               id: editing?.id ?? uid(),
               day: currentDay,
               image: editing?.image ?? trip.image,
+              source: editing?.source,
             };
             const next = editing
               ? trip.activities.map((a) => (a.id === editing.id ? activity : a))
