@@ -1,0 +1,244 @@
+.page-hero {
+  background: #eff6f2;
+  padding: 65px 0 55px;
+  text-align: center;
+}
+.page-hero h1 {
+  font-size: 46px;
+}
+.page-hero p {
+  max-width: 580px;
+  margin: 18px auto 0;
+}
+.page-toolbar {
+  display: flex;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 30px;
+}
+.page-toolbar .field {
+  flex: 1;
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 27px 22px;
+}
+.pricing-card.popular {
+  border: 2px solid var(--primary);
+  box-shadow: 0 10px 40px #006b6710;
+}
+.pricing-card > .badge {
+  align-self: flex-start;
+}
+.pricing-card h3 {
+  font-size: 21px;
+}
+.plan-price {
+  font-size: 31px;
+  font-weight: 650;
+  letter-spacing: -1px;
+}
+.plan-price small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.pricing-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+.pricing-card li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  margin: 13px 0;
+}
+.pricing-card li svg {
+  width: 15px;
+  color: var(--primary);
+}
+.pricing-card .button {
+  font-size: 11px;
+  padding: 10px;
+}
+.notice {
+  padding: 13px 17px;
+  background: #edf5f1;
+  color: #52766d;
+  border-radius: 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.7;
+}
+.notice.warning {
+  background: #fff7e7;
+  color: #806637;
+}
+.route-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+}
+.route-card {
+  overflow: hidden;
+  padding: 0;
+}
+.route-photo {
+  height: 230px;
+  position: relative;
+}
+.route-photo .badge {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  background: white;
+}
+.route-info {
+  padding: 20px;
+}
+.route-info h3 {
+  margin-bottom: 8px;
+}
+.route-info p {
+  font-size: 11px;
+}
+.route-info .row {
+  margin-top: 14px;
+}
+.route-info .button {
+  width: 100%;
+  margin-top: 18px;
+  font-size: 11px;
+}
+.route-price {
+  font-weight: 650;
+  font-size: 21px;
+}
+.route-price small {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  display: block;
+}
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+.auth-image {
+  position: relative;
+  background: var(--primary);
+  padding: 50px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.auth-image > img {
+  opacity: 0.75;
+}
+.auth-image:after {
+  position: absolute;
+  content: "";
+  inset: 0;
+  background: linear-gradient(0deg, #0b3021bb, transparent);
+}
+.auth-image > .logo,
+.auth-image > div {
+  z-index: 1;
+  position: relative;
+}
+.auth-image h2 {
+  font-size: 48px;
+  max-width: 500px;
+}
+.auth-image p {
+  color: #e0ece3;
+  margin-top: 20px;
+}
+.auth-form-wrap {
+  padding: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-form {
+  width: 100%;
+  max-width: 370px;
+}
+.auth-form > .logo {
+  display: none;
+}
+.auth-form h1 {
+  font-size: 31px;
+  margin-top: 18px;
+}
+.auth-form > p {
+  font-size: 13px;
+  margin: 12px 0 28px;
+}
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+.auth-form .button {
+  width: 100%;
+}
+.auth-switch {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 22px;
+}
+.auth-switch a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 11px;
+  color: #9aa5a7;
+  margin: 23px 0;
+}
+.divider:before,
+.divider:after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.auth-demo {
+  margin-top: 24px;
+  padding: 18px;
+  background: var(--bg);
+  border-radius: 13px;
+}
+.auth-demo p {
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.auth-back {
+  font-size: 11px;
+  color: var(--muted);
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 24px;
+}

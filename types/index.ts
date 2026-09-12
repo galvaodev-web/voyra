@@ -1,0 +1,80 @@
+export type Activity = {
+  id: string;
+  day: number;
+  time: string;
+  name: string;
+  category: string;
+  duration: string;
+  cost: number;
+  location: string;
+  image: string;
+};
+export type Expense = {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: string;
+  date: string;
+  paidBy: string;
+};
+export type TravelDocument = {
+  id: string;
+  name: string;
+  type: string;
+  date: string;
+  time: string;
+  reference: string;
+  file?: string;
+  fileName?: string;
+};
+export type Member = { id: string; name: string; role: string; email?: string };
+export type Note = {
+  id: string;
+  date: string;
+  text: string;
+  location: string;
+  rating: number;
+  photo?: string;
+};
+export type Trip = {
+  revision?: number;
+  id: string;
+  name: string;
+  origin: string;
+  destination: string;
+  country: string;
+  start: string;
+  end: string;
+  travelers: number;
+  budget: number;
+  styles: string[];
+  image: string;
+  status: string;
+  progress: number;
+  activities: Activity[];
+  expenses: Expense[];
+  documents: TravelDocument[];
+  members: Member[];
+  notes: Note[];
+  published?: boolean;
+  tips?: string;
+  includeCover?: boolean;
+};
+export type Destination = {
+  id: string;
+  city: string;
+  country: string;
+  days: number;
+  price: number;
+  rating: string;
+  image: string;
+  tag?: string;
+  region: string;
+};
+export type AppData = {
+  trips: Trip[];
+  favorites: string[];
+  profile: { name: string; email: string; city: string };
+  savedRoutes: string[];
+};
