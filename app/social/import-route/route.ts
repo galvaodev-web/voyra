@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { apiError, HttpError, jsonBody } from "@/lib/server/http";
 import { requireBearerUser } from "@/lib/supabase/bearer";
@@ -14,7 +14,9 @@ const activitySchema = z.object({
 });
 
 function stableTripId(userId: string, routeId: string) {
-  const bytes = Buffer.from(createHash("sha256").update(`${userId}:${routeId}`).digest().subarray(0, 16));
+  const bytes = Buffer.from(
+    createHash("sha256").update(`${userId}:${routeId}`).digest().subarray(0, 16),
+  );
   bytes[6] = (bytes[6] & 0x0f) | 0x50;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = bytes.toString("hex");
@@ -33,10 +35,15 @@ export async function POST(request: Request) {
       .eq("id", parsed.data.routeId)
       .maybeSingle();
     if (routeResult.error) throw routeResult.error;
-    if (!routeResult.data?.published) throw new HttpError(404, "Este roteiro não está disponível.");
+    if (!routeResult.data?.published)
+      throw new HttpError(404, "Este roteiro não está disponível.");
 
-    const publicActivities = z.array(activitySchema).max(1000).safeParse(routeResult.data.activities);
-    if (!publicActivities.success) throw new HttpError(422, "O roteiro publicado não pode ser importado.");
+    const publicActivities = z
+      .array(activitySchema)
+      .max(1000)
+      .safeParse(routeResult.data.activities);
+    if (!publicActivities.success)
+      throw new HttpError(422, "O roteiro publicado não pode ser importado.");
 
     const tripId = stableTripId(user.id, routeResult.data.id);
     const existing = await client
@@ -46,7 +53,8 @@ export async function POST(request: Request) {
       .eq("owner_id", user.id)
       .maybeSingle();
     if (existing.error) throw existing.error;
-    if (existing.data) return Response.json({ id: tripId, imported: false, duplicate: true });
+    if (existing.data)
+      return Response.json({ id: tripId, imported: false, duplicate: true });
 
     const start = new Date();
     start.setUTCHours(0, 0, 0, 0);
@@ -58,7 +66,7 @@ export async function POST(request: Request) {
       "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80";
     const activities = publicActivities.data.map((activity) => ({
       ...activity,
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       cost: 0,
       image,
       source: { kind: "voyra-social" as const, routeId: routeResult.data!.id },
@@ -102,7 +110,10 @@ export async function POST(request: Request) {
         return Response.json({ id: tripId, imported: false, duplicate: true });
       throw inserted.error;
     }
-    return Response.json({ id: tripId, imported: true, duplicate: false }, { status: 201 });
+    return Response.json(
+      { id: tripId, imported: true, duplicate: false },
+      { status: 201 },
+    );
   } catch (error) {
     return apiError(error);
   }
