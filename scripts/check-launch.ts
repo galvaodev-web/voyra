@@ -11,6 +11,7 @@ const required = [
   "STRIPE_WEBHOOK_SECRET",
   "STRIPE_PRICE_PLUS",
   "STRIPE_PRICE_CREATOR",
+  "SKYSCANNER_MEDIA_PARTNER_ID",
   "CRON_SECRET",
   "NEXT_PUBLIC_TERMS_URL",
   "NEXT_PUBLIC_PRIVACY_URL",
@@ -18,7 +19,8 @@ const required = [
 ];
 async function main() {
   const problems: string[] = [];
-  for (const name of required) if (!process.env[name]?.trim()) problems.push(`Ausente: ${name}`);
+  for (const name of required)
+    if (!process.env[name]?.trim()) problems.push(`Ausente: ${name}`);
   if (process.env.NEXT_PUBLIC_DEMO_ENABLED !== "false")
     problems.push("Defina NEXT_PUBLIC_DEMO_ENABLED=false para lançamento.");
   for (const name of [
@@ -30,7 +32,12 @@ async function main() {
     if (!process.env[name]) continue;
     try {
       const url = new URL(process.env[name]!);
-      if (url.protocol !== "https:" || url.username || url.password || url.hostname === "localhost")
+      if (
+        url.protocol !== "https:" ||
+        url.username ||
+        url.password ||
+        url.hostname === "localhost"
+      )
         throw new Error();
     } catch {
       problems.push(`${name} deve ser uma URL HTTPS pública válida.`);
@@ -52,6 +59,11 @@ async function main() {
     process.env.STRIPE_PRICE_PLUS === process.env.STRIPE_PRICE_CREATOR
   )
     problems.push("Plus e Creator devem usar preços distintos.");
+  if (
+    process.env.SKYSCANNER_MEDIA_PARTNER_ID &&
+    !/^[A-Za-z0-9_-]{3,128}$/.test(process.env.SKYSCANNER_MEDIA_PARTNER_ID)
+  )
+    problems.push("SKYSCANNER_MEDIA_PARTNER_ID inválido.");
   if (problems.length) {
     console.error(problems.join("\n"));
     process.exitCode = 1;
@@ -72,11 +84,16 @@ async function main() {
       "checkout_attempts",
       "published_routes",
       "storage_cleanup",
+      "partner_referrals",
+      "commission_events",
     ]) {
-      const { error } = await db.from(table).select("*", { count: "exact", head: true }).limit(0);
+      const { error } = await db
+        .from(table)
+        .select("*", { count: "exact", head: true })
+        .limit(0);
       if (error)
         throw new Error(
-          `Não foi possível verificar a tabela ${table}. Aplique o schema e a migração de lançamento.`,
+          `Não foi possível verificar a tabela ${table}. Aplique o schema e todas as migrations de produção.`,
         );
     }
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -95,9 +112,18 @@ async function main() {
       )
         throw new Error(`Preço incompatível: ${name}.`);
     }
-    const portal = await stripe.billingPortal.configurations.list({ active: true, limit: 10 });
-    if (!portal.data.some((p) => p.is_default && p.features.subscription_cancel.enabled))
-      throw new Error("Ative o portal padrão do Stripe com cancelamento de assinatura.");
+    const portal = await stripe.billingPortal.configurations.list({
+      active: true,
+      limit: 10,
+    });
+    if (
+      !portal.data.some(
+        (p) => p.is_default && p.features.subscription_cancel.enabled,
+      )
+    )
+      throw new Error(
+        "Ative o portal padrão do Stripe com cancelamento de assinatura.",
+      );
     const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
     const endpoint = endpoints.data.find(
       (e) =>
@@ -119,9 +145,11 @@ async function main() {
           endpoint.enabled_events.some((event) => event === e),
       )
     )
-      throw new Error("Configure o webhook Stripe e os cinco eventos descritos em docs/LAUNCH.md.");
+      throw new Error(
+        "Configure o webhook Stripe e os cinco eventos descritos em docs/LAUNCH.md.",
+      );
     console.log(
-      "Conexões verificadas por leitura: tabelas, preços, portal e webhook. Valide os fluxos ponta a ponta antes de abrir ao público.",
+      "Conexões verificadas por leitura: tabelas, marketplace, preços, portal e webhook. Valide os fluxos ponta a ponta antes de abrir ao público.",
     );
   }
   console.log("Configuração de lançamento validada. Nenhum segredo foi impresso.");

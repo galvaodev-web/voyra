@@ -8,6 +8,11 @@ export type Activity = {
   cost: number;
   location: string;
   image: string;
+  source?: {
+    kind: "voyra-social";
+    postId?: string;
+    routeId?: string;
+  };
 };
 export type Expense = {
   id: string;
@@ -60,6 +65,7 @@ export type Trip = {
   published?: boolean;
   tips?: string;
   includeCover?: boolean;
+  completedAt?: string;
 };
 export type Destination = {
   id: string;

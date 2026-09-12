@@ -9,8 +9,8 @@ export const integrations: IntegrationStatus[] = [
   { name: "mapbox", status: "mock", serverOnly: false },
   { name: "stripe", status: "implemented", serverOnly: true },
   { name: "weather", status: "mock", serverOnly: true },
-  { name: "flights", status: "planned", serverOnly: true },
-  { name: "bookings", status: "planned", serverOnly: true },
+  { name: "flights", status: "implemented", serverOnly: true },
+  { name: "bookings", status: "implemented", serverOnly: true },
 ];
 export interface WeatherProvider {
   forecast(city: string): Promise<{

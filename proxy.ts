@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { cookieOptions } from "@/lib/supabase/config";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const configured = Boolean(
@@ -11,6 +12,7 @@ export async function proxy(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions,
         cookies: {
           getAll: () => request.cookies.getAll(),
           setAll: (values) => {
