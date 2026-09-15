@@ -13,24 +13,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { DestinationCard } from "@/components/trips/destination-card";
+import { TravelComparisonCard } from "@/components/trips/travel-comparison-card";
 import { destinations } from "@/data/mock-data";
+import type { TravelSearchResponse } from "@/lib/travel/contracts";
+import { travelSearchSchema } from "@/lib/travel/contracts";
+import { VoyraPriceEngine } from "@/lib/travel/price-engine";
 export function BudgetDiscovery() {
+  const [origin, setOrigin] = useState("São Paulo, Brasil");
   const [budget, setBudget] = useState("5000");
   const [people, setPeople] = useState("1");
   const [days, setDays] = useState("7");
-  const [filtered, setFiltered] = useState(false);
+  const [search, setSearch] = useState<TravelSearchResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [region, setRegion] = useState("Todos");
-  const results = destinations
-    .filter(
-      (d) =>
-        (region === "Todos" || d.region === region) &&
-        (!filtered || (d.price / d.days) * Number(days) * Number(people) <= Number(budget)),
-    )
-    .map((d) =>
-      filtered
-        ? { ...d, days: Number(days), price: Math.round((d.price / d.days) * Number(days)) }
-        : d,
-    );
+  const initialResults = destinations.filter((d) => region === "Todos" || d.region === region);
+  const results = search?.options ?? initialResults;
   return (
     <section className="section destinations-section" id="destinos">
       <div className="container">
@@ -49,9 +47,56 @@ export function BudgetDiscovery() {
         </div>
         <form
           className="budget-search"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-            setFiltered(true);
+            setLoading(true);
+            setError("");
+            try {
+              if (process.env.NEXT_PUBLIC_STATIC_DEMO === "true") {
+                const input = travelSearchSchema.parse({
+                  origin,
+                  maxBudget: Number(budget),
+                  travelers: Number(people),
+                  durationDays: Number(days),
+                  region,
+                  currency: "BRL",
+                  sort: "VALUE",
+                });
+                const demoResult = await new VoyraPriceEngine().search(input);
+                setSearch({
+                  searchId: null,
+                  persisted: false,
+                  generatedAt: new Date().toISOString(),
+                  options: demoResult.options,
+                  providers: demoResult.providerResults,
+                });
+                return;
+              }
+              const response = await fetch("/api/travel/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  origin,
+                  maxBudget: Number(budget),
+                  travelers: Number(people),
+                  durationDays: Number(days),
+                  region,
+                  currency: "BRL",
+                  sort: "VALUE",
+                  analyticsConsent: false,
+                }),
+              });
+              const payload = (await response.json()) as TravelSearchResponse & { error?: string };
+              if (!response.ok)
+                throw new Error(payload.error || "Não foi possível buscar destinos.");
+              setSearch(payload);
+            } catch (reason) {
+              setError(
+                reason instanceof Error ? reason.message : "Não foi possível buscar destinos.",
+              );
+            } finally {
+              setLoading(false);
+            }
           }}
         >
           <label>
@@ -60,7 +105,8 @@ export function BudgetDiscovery() {
               <small>Saindo de</small>
               <input
                 aria-label="Cidade de origem para orçamento"
-                defaultValue="São Paulo, Brasil"
+                value={origin}
+                onChange={(event) => setOrigin(event.target.value)}
                 required
               />
             </span>
@@ -117,14 +163,21 @@ export function BudgetDiscovery() {
               </select>
             </span>
           </label>
-          <Button type="submit">
-            <Sparkles size={17} /> Descobrir destinos
+          <Button type="submit" disabled={loading}>
+            <Sparkles size={17} /> {loading ? "Buscando..." : "Descobrir destinos"}
           </Button>
         </form>
         <div className="destination-filters">
           <div className="filter-pills">
             {["Todos", "Brasil", "América do Sul", "Europa", "Ásia"].map((r) => (
-              <button className={region === r ? "active" : ""} onClick={() => setRegion(r)} key={r}>
+              <button
+                className={region === r ? "active" : ""}
+                onClick={() => {
+                  setRegion(r);
+                  setSearch(null);
+                }}
+                key={r}
+              >
                 {r === "Todos" && <Globe2 size={14} />}
                 {r}
               </button>
@@ -132,11 +185,24 @@ export function BudgetDiscovery() {
           </div>
           <span>Uma nova história está te esperando</span>
         </div>
-        {results.length ? (
-          <div className="destination-grid">
-            {results.slice(0, 4).map((d) => (
-              <DestinationCard destination={d} key={d.id} />
-            ))}
+        {error ? (
+          <div className="empty-state" role="alert">
+            <h3>A busca não foi concluída</h3>
+            <p>{error}</p>
+          </div>
+        ) : results.length ? (
+          <div className={`destination-grid${search ? " comparison-grid" : ""}`}>
+            {search
+              ? search.options
+                  .slice(0, 4)
+                  .map((option) => (
+                    <TravelComparisonCard option={option} key={option.destinationId} />
+                  ))
+              : initialResults
+                  .slice(0, 4)
+                  .map((destination) => (
+                    <DestinationCard destination={destination} key={destination.id} />
+                  ))}
           </div>
         ) : (
           <div className="empty-state">
@@ -145,7 +211,7 @@ export function BudgetDiscovery() {
             <Button
               variant="secondary"
               onClick={() => {
-                setFiltered(false);
+                setSearch(null);
                 setRegion("Todos");
               }}
             >
@@ -154,8 +220,9 @@ export function BudgetDiscovery() {
           </div>
         )}
         <p className="estimate-note">
-          Valores ilustrativos por pessoa, sem cotação em tempo real. A busca estima o total pelo
-          número de dias e viajantes.
+          {search?.persisted
+            ? "Busca salva na sua conta. Estimativas e ofertas ao vivo são identificadas separadamente."
+            : "Valores estimados usam o catálogo Voyra e não representam disponibilidade para compra."}
         </p>
       </div>
     </section>

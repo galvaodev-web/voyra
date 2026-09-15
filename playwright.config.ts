@@ -4,7 +4,7 @@ if (!/^\d{2,5}$/.test(port)) throw new Error("PLAYWRIGHT_PORT inválida");
 const baseURL = `http://localhost:${port}`;
 export default defineConfig({
   testDir: "./tests",
-  testIgnore: "**/pages.spec.ts",
+  testIgnore: ["**/pages.spec.ts", "**/*.test.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
@@ -24,6 +24,10 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- --port ${port}`,
     url: baseURL,
+    env: {
+      SITE_URL: baseURL,
+      RATE_LIMIT_SECRET: "playwright-local-rate-limit-secret-32-bytes",
+    },
     reuseExistingServer: false,
     timeout: 120000,
   },

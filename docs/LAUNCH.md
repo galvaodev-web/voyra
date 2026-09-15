@@ -8,7 +8,7 @@ Para abrir inicialmente com contas Free, defina `NEXT_PUBLIC_BILLING_ENABLED=fal
 
 Login por e-mail é o fluxo inicial. Só defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` depois de configurar e validar o provedor Google. As duas opções são incorporadas no build e exigem novo deploy quando alteradas.
 
-1. Em um projeto novo, execute `supabase/schema.sql` e depois `supabase/migrations/20260911_launch.sql`. Em projeto existente com o schema original, execute somente a migração. Faça backup antes de migrar dados existentes.
+1. Em um projeto novo, execute `supabase/schema.sql` e depois, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql` e `20260915_price_engine.sql`. Em projeto existente, execute somente as migrations ainda não aplicadas. Faça backup antes de migrar dados existentes.
 2. Configure URL e chave pública, e `SUPABASE_SERVICE_ROLE_KEY` exclusivamente no servidor. Use `.env.example` como referência; nunca publique `.env.local`.
 3. Ative confirmação de e-mail e configure SMTP do seu domínio. Configure limites de autenticação e proteção contra cadastro abusivo no provedor conforme sua operação.
 4. Configure Site URL e redirects exatos para `https://SEU-DOMINIO/auth/callback`. Cadastros e recuperação usam PKCE; teste abrindo o link no mesmo navegador que iniciou o fluxo. Se oferecer Google, configure seu OAuth e o redirect correspondente no Supabase.
@@ -55,6 +55,7 @@ Excluir a conta exige sessão e confirmação digitada, encerra a assinatura, re
 ## 5. Domínio, políticas e deploy
 
 - Defina `SITE_URL` como a origem HTTPS canônica e `NEXT_PUBLIC_DEMO_ENABLED=false` no build e em execução.
+- Defina `RATE_LIMIT_SECRET` com pelo menos 32 caracteres aleatórios. Ele pseudonimiza os identificadores usados pelo rate limit persistente de busca, afiliados e integrações Social.
 - Publique os termos e a política de privacidade do operador e preencha `NEXT_PUBLIC_TERMS_URL`, `NEXT_PUBLIC_PRIVACY_URL` e `NEXT_PUBLIC_SUPPORT_EMAIL`. Os links aparecem no rodapé e no cadastro. Defina identificação do responsável, atendimento, condições comerciais, reembolsos e tratamento de dados nesses documentos. Este repositório não inventa essas informações.
 - Hospede em Node.js 22 ou Vercel. Configure todas as variáveis antes do build; `NEXT_PUBLIC_*` é incorporado ao bundle. `SITE_URL` precisa corresponder à origem usada pelo navegador, inclusive para o checkout e exclusão de conta.
 - Na configuração do projeto Vercel, use `npm run build:launch` como comando de build público. A CI valida a demonstração separadamente, sem segredos.
@@ -63,6 +64,7 @@ Excluir a conta exige sessão e confirmação digitada, encerra a assinatura, re
 npm ci
 npm run lint
 npm run typecheck
+npm run test:unit
 npm run test:db
 npm run test:billing
 npm run build

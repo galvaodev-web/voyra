@@ -2,10 +2,14 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { apiError, HttpError, jsonBody } from "@/lib/server/http";
 import { requireBearerUser } from "@/lib/supabase/bearer";
+import { enforceRateLimit } from "@/lib/server/rate-limit";
+import { requestContext, structuredLog } from "@/lib/server/logger";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 const inputSchema = z.object({
   postId: z.string().uuid(),
   idempotencyKey: z.string().min(1).max(200),
+  analyticsConsent: z.boolean().default(false),
 });
 
 const postSchema = z
@@ -36,10 +40,8 @@ type TripData = Record<string, unknown> & {
   progress?: number;
 };
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const context = requestContext(request, "/social/trips/:id/places");
   try {
     const { id: rawTripId } = await params;
     const tripId = z.string().uuid().parse(rawTripId);
@@ -49,6 +51,12 @@ export async function POST(
       throw new HttpError(400, "Chave de idempotência inválida.");
 
     const { client, user } = await requireBearerUser(request);
+    context.userId = user.id;
+    await enforceRateLimit(request, "social-place-import", {
+      userId: user.id,
+      maximum: 30,
+      windowSeconds: 60,
+    });
     const detail = await client
       .schema("social")
       .rpc("post_detail", { target_id: input.data.postId });
@@ -82,8 +90,7 @@ export async function POST(
       const activities = Array.isArray(current.activities) ? current.activities : [];
       const duplicate = activities.find(
         (activity) =>
-          activity.source?.kind === "voyra-social" &&
-          activity.source.postId === parsedPost.data.id,
+          activity.source?.kind === "voyra-social" && activity.source.postId === parsedPost.data.id,
       );
       if (duplicate)
         return Response.json({
@@ -123,12 +130,27 @@ export async function POST(
         .select("revision")
         .maybeSingle();
       if (updated.error) throw updated.error;
-      if (updated.data)
+      if (updated.data) {
+        await trackServerEvent(
+          {
+            name: "post_imported_to_trip",
+            userId: user.id,
+            tripId,
+            consented: input.data.analyticsConsent,
+            properties: { source: "post", sourceId: parsedPost.data.id },
+          },
+          context,
+        );
+        structuredLog("info", "social_place_imported", context, { tripId });
         return Response.json({ added: true, duplicate: false, tripId, activityId: activity.id });
+      }
     }
 
     throw new HttpError(409, "A viagem mudou enquanto o lugar era adicionado. Tente novamente.");
   } catch (error) {
+    structuredLog("error", "social_place_import_failed", context, {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return apiError(error);
   }
 }

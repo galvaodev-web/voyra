@@ -221,6 +221,12 @@
   .destination-grid {
     gap: 13px;
   }
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+  .comparison-grid .destination-image {
+    height: 190px;
+  }
   .destination-image {
     height: 160px;
   }

@@ -510,6 +510,70 @@
   margin-top: 22px;
   color: #92a09f;
 }
+.comparison-info {
+  display: flex;
+  min-height: 286px;
+  flex-direction: column;
+}
+.comparison-heading {
+  align-items: flex-start;
+}
+.comparison-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.comparison-total {
+  margin: 16px 0 13px;
+}
+.comparison-total small,
+.comparison-total span {
+  display: block;
+  color: var(--muted);
+  font-size: 8px;
+}
+.comparison-total strong {
+  display: block;
+  margin: 3px 0;
+  font-size: 22px;
+}
+.price-breakdown {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.price-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9px;
+}
+.price-breakdown dt {
+  color: var(--muted);
+}
+.price-breakdown dd {
+  font-weight: 600;
+}
+.comparison-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.comparison-tags span {
+  border-radius: 4px;
+  background: #eef6f3;
+  color: var(--primary);
+  font-size: 7px;
+  font-weight: 700;
+  padding: 4px 6px;
+  text-transform: uppercase;
+}
+.live-price-tag {
+  background: #dff7e9;
+}
 .ai-section {
   margin-top: 65px;
   display: grid;

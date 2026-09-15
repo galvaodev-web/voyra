@@ -2,8 +2,14 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { apiError, HttpError, jsonBody } from "@/lib/server/http";
 import { requireBearerUser } from "@/lib/supabase/bearer";
+import { enforceRateLimit } from "@/lib/server/rate-limit";
+import { requestContext, structuredLog } from "@/lib/server/logger";
+import { trackServerEvent } from "@/lib/analytics/server";
 
-const inputSchema = z.object({ routeId: z.string().uuid() });
+const inputSchema = z.object({
+  routeId: z.string().uuid(),
+  analyticsConsent: z.boolean().default(false),
+});
 const activitySchema = z.object({
   day: z.number().int().min(1).max(366),
   time: z.string().max(5),
@@ -24,10 +30,17 @@ function stableTripId(userId: string, routeId: string) {
 }
 
 export async function POST(request: Request) {
+  const context = requestContext(request, "/social/import-route");
   try {
     const parsed = inputSchema.safeParse(await jsonBody(request));
     if (!parsed.success) throw new HttpError(400, "Roteiro inválido.");
     const { client, user } = await requireBearerUser(request);
+    context.userId = user.id;
+    await enforceRateLimit(request, "social-route-import", {
+      userId: user.id,
+      maximum: 20,
+      windowSeconds: 60,
+    });
 
     const routeResult = await client
       .from("published_routes")
@@ -35,8 +48,7 @@ export async function POST(request: Request) {
       .eq("id", parsed.data.routeId)
       .maybeSingle();
     if (routeResult.error) throw routeResult.error;
-    if (!routeResult.data?.published)
-      throw new HttpError(404, "Este roteiro não está disponível.");
+    if (!routeResult.data?.published) throw new HttpError(404, "Este roteiro não está disponível.");
 
     const publicActivities = z
       .array(activitySchema)
@@ -53,8 +65,7 @@ export async function POST(request: Request) {
       .eq("owner_id", user.id)
       .maybeSingle();
     if (existing.error) throw existing.error;
-    if (existing.data)
-      return Response.json({ id: tripId, imported: false, duplicate: true });
+    if (existing.data) return Response.json({ id: tripId, imported: false, duplicate: true });
 
     const start = new Date();
     start.setUTCHours(0, 0, 0, 0);
@@ -110,11 +121,22 @@ export async function POST(request: Request) {
         return Response.json({ id: tripId, imported: false, duplicate: true });
       throw inserted.error;
     }
-    return Response.json(
-      { id: tripId, imported: true, duplicate: false },
-      { status: 201 },
+    await trackServerEvent(
+      {
+        name: "post_imported_to_trip",
+        userId: user.id,
+        tripId,
+        consented: parsed.data.analyticsConsent,
+        properties: { source: "route", sourceId: routeResult.data.id },
+      },
+      context,
     );
+    structuredLog("info", "social_route_imported", context, { tripId });
+    return Response.json({ id: tripId, imported: true, duplicate: false }, { status: 201 });
   } catch (error) {
+    structuredLog("error", "social_route_import_failed", context, {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return apiError(error);
   }
 }

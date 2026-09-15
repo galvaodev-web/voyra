@@ -25,6 +25,8 @@ async function main() {
   );
   await db.exec(schema);
   await db.exec(await readFile("supabase/migrations/20260911_launch.sql", "utf8"));
+  await db.exec(await readFile("supabase/migrations/20260912_marketplace.sql", "utf8"));
+  await db.exec(await readFile("supabase/migrations/20260915_price_engine.sql", "utf8"));
   const alice = "11111111-1111-4111-8111-111111111111";
   const bob = "22222222-2222-4222-8222-222222222222";
   const trip = "33333333-3333-4333-8333-333333333333";
@@ -54,10 +56,65 @@ async function main() {
   assert.equal((await db.query("select * from public.trips")).rows.length, 1);
   assert.equal((await db.query("select * from public.profiles")).rows.length, 1);
 
+  await assert.rejects(
+    db.exec(
+      "insert into public.travel_searches(user_id,origin,travelers,duration_days,max_budget,sort_mode) values(auth.uid(),'Brasilia',2,7,5000,'VALUE')",
+    ),
+    /permission denied/i,
+  );
+  const searchId = "66666666-6666-4666-8666-666666666666";
+  const searchPayload = {
+    origin: "Brasilia",
+    flexibleDays: 0,
+    travelers: 2,
+    durationDays: 7,
+    maxBudget: 5000,
+    currency: "BRL",
+    preferences: [],
+    sort: "VALUE",
+    status: "COMPLETED",
+    resultCount: 4,
+  };
+  await db.exec("reset role");
+  await db.exec("set role service_role");
+  await db.query("select public.persist_travel_search($1,$2,$3,'[]','[]')", [
+    alice,
+    searchId,
+    searchPayload,
+  ]);
+  assert.equal(
+    (
+      await db.query<{ allowed: boolean }>(
+        "select public.consume_rate_limit('search','hash',2,60) as allowed",
+      )
+    ).rows[0].allowed,
+    true,
+  );
+  await db.query("select public.consume_rate_limit('search','hash',2,60)");
+  assert.equal(
+    (
+      await db.query<{ allowed: boolean }>(
+        "select public.consume_rate_limit('search','hash',2,60) as allowed",
+      )
+    ).rows[0].allowed,
+    false,
+  );
+  await assert.rejects(
+    db.query(
+      "insert into public.price_snapshots(provider,origin,destination,travelers,total_price,currency,price_type,confidence,observed_at) values('fake','BSB','SCL',2,1200,'BRL','ESTIMATED',0.3,now())",
+    ),
+    /check constraint/i,
+  );
+  await db.exec("reset role");
+  await db.exec("set role authenticated");
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [alice]);
+  assert.equal((await db.query("select * from public.travel_searches")).rows.length, 1);
+
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [bob]);
   for (const table of ["trips", "trip_members", "favorites"]) {
     assert.equal((await db.query(`select * from public.${table}`)).rows.length, 0, table);
   }
+  assert.equal((await db.query("select * from public.travel_searches")).rows.length, 0);
   assert.equal((await db.query("select * from storage.objects")).rows.length, 0);
   await assert.rejects(
     db.query("insert into public.trip_members(trip_id,name) values($1,'Invader')", [trip]),

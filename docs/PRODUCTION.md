@@ -11,7 +11,8 @@ For a new environment, apply the Travel base first, then the launch and marketpl
 1. `supabase/schema.sql`
 2. `supabase/migrations/20260911_launch.sql`
 3. `supabase/migrations/20260912_marketplace.sql`
-4. Voyra Social migrations in filename order
+4. `supabase/migrations/20260915_price_engine.sql`
+5. Voyra Social migrations in filename order
 
 Never disable RLS to fix integration errors.
 
@@ -35,7 +36,13 @@ The partner remains responsible for final inventory, price confirmation, ticket/
 
 `commission_events` is the internal financial ledger for confirmed partner reporting. Do not invent commission values from clicks; ingest only values confirmed by the partner/affiliate reporting channel.
 
-## 5. Social integration
+## 5. Price Engine and search
+
+`POST /api/travel/search` is the server boundary for budget discovery. It validates input, rate limits callers, ranks normalized options and persists authenticated searches atomically. The internal catalog is always returned as `ESTIMATED`; only provider responses with live primary components may be returned as `LIVE`.
+
+The migration creates `travel_searches`, `search_preferences`, `provider_results`, `offers`, `price_snapshots`, `price_alerts`, `notification_preferences`, `provider_health` and `analytics_events`. Estimated catalog values are never written to `price_snapshots`. Configure `RATE_LIMIT_SECRET` with at least 32 random bytes; identifiers are HMAC-pseudonymized before storage.
+
+## 6. Social integration
 
 Travel exposes bearer-authenticated, privacy-safe endpoints under `/social` for:
 
@@ -47,7 +54,7 @@ Travel exposes bearer-authenticated, privacy-safe endpoints under `/social` for:
 
 Voyra Social must point `VOYRA_TRAVEL_API_URL` at this Travel origin. Both applications must use the same Supabase Auth project.
 
-## 6. Launch gate
+## 7. Launch gate
 
 Populate `.env.local`/host secrets and run:
 
@@ -55,12 +62,13 @@ Populate `.env.local`/host secrets and run:
 npm ci
 npm run lint
 npm run typecheck
+npm run test:unit
 npm run test:db
 npm run test:billing
 npm run build
 npm test
-npm run launch:check
-npm run launch:check:remote
+npm run check:launch
+npm run check:launch -- --remote
 ```
 
 The remote launch check validates the production database objects, Stripe products/portal/webhook, and required marketplace configuration without printing secrets.

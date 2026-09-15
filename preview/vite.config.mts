@@ -25,6 +25,7 @@ export default defineConfig({
     "process.env.NEXT_PUBLIC_SUPABASE_URL": '""',
     "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": '""',
     "process.env.NEXT_PUBLIC_DEMO_ENABLED": '"true"',
+    "process.env.NEXT_PUBLIC_STATIC_DEMO": '"true"',
     "process.env.NEXT_PUBLIC_TERMS_URL": '""',
     "process.env.NEXT_PUBLIC_PRIVACY_URL": '""',
     "process.env.NEXT_PUBLIC_SUPPORT_EMAIL": '""',

@@ -1,7 +1,7 @@
 export type IntegrationName = "openai" | "mapbox" | "stripe" | "weather" | "flights" | "bookings";
 export type IntegrationStatus = {
   name: IntegrationName;
-  status: "mock" | "planned" | "implemented";
+  status: "mock" | "planned" | "affiliate" | "implemented";
   serverOnly: boolean;
 };
 export const integrations: IntegrationStatus[] = [
@@ -9,8 +9,8 @@ export const integrations: IntegrationStatus[] = [
   { name: "mapbox", status: "mock", serverOnly: false },
   { name: "stripe", status: "implemented", serverOnly: true },
   { name: "weather", status: "mock", serverOnly: true },
-  { name: "flights", status: "implemented", serverOnly: true },
-  { name: "bookings", status: "implemented", serverOnly: true },
+  { name: "flights", status: "affiliate", serverOnly: true },
+  { name: "bookings", status: "affiliate", serverOnly: true },
 ];
 export interface WeatherProvider {
   forecast(city: string): Promise<{

@@ -13,6 +13,7 @@ const required = [
     ? ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_PLUS", "STRIPE_PRICE_CREATOR"]
     : []),
   "CRON_SECRET",
+  "RATE_LIMIT_SECRET",
   "NEXT_PUBLIC_TERMS_URL",
   "NEXT_PUBLIC_PRIVACY_URL",
   "NEXT_PUBLIC_SUPPORT_EMAIL",
@@ -46,12 +47,7 @@ async function main() {
     if (!process.env[name]) continue;
     try {
       const url = new URL(process.env[name]!);
-      if (
-        url.protocol !== "https:" ||
-        url.username ||
-        url.password ||
-        url.hostname === "localhost"
-      )
+      if (url.protocol !== "https:" || url.username || url.password || url.hostname === "localhost")
         throw new Error();
     } catch {
       problems.push(`${name} deve ser uma URL HTTPS pública válida.`);
@@ -59,6 +55,8 @@ async function main() {
   }
   if (process.env.CRON_SECRET && process.env.CRON_SECRET.length < 32)
     problems.push("CRON_SECRET deve ter pelo menos 32 caracteres aleatórios.");
+  if (process.env.RATE_LIMIT_SECRET && process.env.RATE_LIMIT_SECRET.length < 32)
+    problems.push("RATE_LIMIT_SECRET deve ter pelo menos 32 caracteres aleatórios.");
   if (
     process.env.NEXT_PUBLIC_SUPPORT_EMAIL &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.NEXT_PUBLIC_SUPPORT_EMAIL)
@@ -104,11 +102,18 @@ async function main() {
       "storage_cleanup",
       "partner_referrals",
       "commission_events",
+      "travel_searches",
+      "search_preferences",
+      "provider_results",
+      "offers",
+      "price_snapshots",
+      "price_alerts",
+      "notification_preferences",
+      "analytics_events",
+      "provider_health",
+      "api_rate_limits",
     ]) {
-      const { error } = await db
-        .from(table)
-        .select("*", { count: "exact", head: true })
-        .limit(0);
+      const { error } = await db.from(table).select("*", { count: "exact", head: true }).limit(0);
       if (error)
         throw new Error(
           `Não foi possível verificar a tabela ${table}. Aplique o schema e todas as migrations de produção.`,
@@ -140,14 +145,8 @@ async function main() {
       active: true,
       limit: 10,
     });
-    if (
-      !portal.data.some(
-        (p) => p.is_default && p.features.subscription_cancel.enabled,
-      )
-    )
-      throw new Error(
-        "Ative o portal padrão do Stripe com cancelamento de assinatura.",
-      );
+    if (!portal.data.some((p) => p.is_default && p.features.subscription_cancel.enabled))
+      throw new Error("Ative o portal padrão do Stripe com cancelamento de assinatura.");
     const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
     const endpoint = endpoints.data.find(
       (e) =>
@@ -169,9 +168,7 @@ async function main() {
           endpoint.enabled_events.some((event) => event === e),
       )
     )
-      throw new Error(
-        "Configure o webhook Stripe e os cinco eventos descritos em docs/LAUNCH.md.",
-      );
+      throw new Error("Configure o webhook Stripe e os cinco eventos descritos em docs/LAUNCH.md.");
     console.log(
       "Conexões verificadas por leitura: tabelas, marketplace, preços, portal e webhook. Valide os fluxos ponta a ponta antes de abrir ao público.",
     );

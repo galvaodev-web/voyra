@@ -19,6 +19,10 @@ test("landing, discovery, favorites and route protection", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Remover Buenos Aires dos favoritos" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Descobrir destinos" }).click();
+  await expect(page.getByText("Total para 1 pessoa").first()).toBeVisible();
+  await expect(page.getByText("Preço estimado").first()).toBeVisible();
+  await page.screenshot({ path: "test-results/search-comparison-desktop.png", fullPage: true });
   await page.getByLabel("Orçamento", { exact: true }).selectOption("3000");
   await page.getByLabel("Pessoas para orçamento").selectOption("4");
   await page.getByRole("button", { name: "Descobrir destinos" }).click();
@@ -117,6 +121,10 @@ test("all pages and mobile layout", async ({ page }) => {
   await page.goto("/");
   await page.screenshot({ path: "test-results/landing-mobile.png", fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Descobrir destinos" }).click();
+  await expect(page.getByText("Total para 1 pessoa").first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "test-results/search-comparison-mobile.png", fullPage: true });
   await page.getByRole("button", { name: "Abrir menu" }).click();
   await expect(page.getByRole("navigation", { name: "Navegação principal" })).toBeVisible();
   await demo(page);

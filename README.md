@@ -31,6 +31,12 @@ Os dados de exemplo e alterações são salvos no `localStorage` deste navegador
 - Supabase Auth, PostgreSQL e Supabase Storage privado.
 - Playwright para testes dos fluxos em navegador.
 
+### Backend de busca e preços
+
+`POST /api/travel/search` concentra validação, rate limit, ranking e persistência da busca por orçamento. O `VoyraPriceEngine` não depende de fornecedor específico: adapters implementam um contrato comum e o agregador aplica timeout, retry controlado, cache e circuit breaker por provider.
+
+O catálogo interno produz somente valores `ESTIMATED`, com confiança e composição explícitas. Um resultado só pode ser `LIVE` quando providers reais entregam os componentes primários; apenas ofertas `LIVE` geram `price_snapshots`. Buscas autenticadas são persistidas atomicamente para suportar histórico e alertas futuros.
+
 O `package-lock.json` fixa as versões instaladas. A integração Stripe usa chaves privadas apenas no servidor. Nenhum cartão é armazenado pela aplicação.
 
 ## O que funciona
@@ -52,8 +58,7 @@ O `package-lock.json` fixa as versões instaladas. A integração Stripe usa cha
 ## Conectar o Supabase
 
 1. Crie um projeto no Supabase.
-2. Execute **uma vez**, em um projeto novo, o arquivo `supabase/schema.sql` no SQL Editor. Ele cria tabelas, relacionamentos, índices, triggers, RLS, função de preferências e bucket privado.
-   Em seguida, execute `supabase/migrations/20260911_launch.sql`. Em projetos existentes, aplique somente essa migração; não execute o schema inicial novamente.
+2. Execute **uma vez**, em um projeto novo, o arquivo `supabase/schema.sql` no SQL Editor. Depois aplique, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql` e `20260915_price_engine.sql`. Em projetos existentes, aplique somente as migrations pendentes; não execute o schema inicial novamente.
 3. Copie `.env.example` para `.env.local`.
 4. Preencha:
 
@@ -176,6 +181,7 @@ tests/                  Testes de navegação e fluxos com Playwright
 ```bash
 npm run lint
 npm run typecheck
+npm run test:unit
 npm run test:db
 npm run test:billing
 npm run build

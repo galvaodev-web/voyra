@@ -31,6 +31,15 @@ export async function requireUser() {
   if (error || !user) throw new HttpError(401, "Entre na sua conta para continuar.");
   return { client, user };
 }
+export async function optionalUser() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    return null;
+  const client = await createClient();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  return user ? { client, user } : null;
+}
 export async function jsonBody(request: Request, limit = 8192): Promise<unknown> {
   const reader = request.body?.getReader();
   if (!reader) throw new HttpError(400, "Envie os dados da solicitação.");

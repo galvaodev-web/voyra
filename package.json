@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
+    "test:unit": "node --conditions=react-server --import tsx --test tests/*.test.ts",
     "test:db": "tsx scripts/check-schema.ts",
     "test:billing": "node --conditions=react-server --import tsx scripts/check-billing.ts",
     "check:launch": "tsx scripts/check-launch.ts",
