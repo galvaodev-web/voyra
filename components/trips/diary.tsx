@@ -196,7 +196,7 @@ export function PublishTrip({ trip }: { trip: Trip }) {
           <h2>{trip.name}</h2>
           <p>
             {trip.activities.length} atividades · {trip.notes.length} memórias. Compartilhamento por
-            arquivo disponível; publicação na comunidade em breve.
+            arquivo disponível nesta demonstração.
           </p>
           <label className="field">
             <span>Suas dicas para outros viajantes</span>
@@ -216,7 +216,7 @@ export function PublishTrip({ trip }: { trip: Trip }) {
             <input name="photos" type="checkbox" defaultChecked={trip.includeCover ?? false} />
             Incluir capa ilustrativa no arquivo de compartilhamento.
           </label>
-          <Badge>Publicação na comunidade · em breve</Badge>
+          <Badge>Compartilhamento por arquivo</Badge>
           <Button loading={busy} type="submit">
             <Share2 size={16} />
             Publicar roteiro (prévia)

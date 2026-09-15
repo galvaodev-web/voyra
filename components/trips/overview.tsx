@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Avatar, Card } from "@/components/ui";
 import { WeatherCard } from "@/components/trips/weather-card";
+import { BookingCard } from "@/components/trips/booking-card";
 import type { Trip } from "@/types";
 import { expenseBRL, money, tripDays } from "@/utils/format";
 export function BudgetStats({ trip }: { trip: Trip }) {
@@ -44,6 +45,43 @@ export function TripOverview({ trip }: { trip: Trip }) {
   return (
     <>
       <BudgetStats trip={trip} />
+      {(!trip.activities.length || !trip.documents.length || !trip.expenses.length) && (
+        <Card className="getting-started">
+          <span className="eyebrow">SEUS PRIMEIROS PASSOS</span>
+          <h2>Dê forma à sua viagem</h2>
+          <p>Comece pelo que você já sabe. Você pode editar os detalhes depois.</p>
+          <div className="quick-links">
+            {[
+              {
+                label: "Adicionar atividades ao roteiro",
+                slug: "roteiro",
+                done: trip.activities.length > 0,
+                icon: Route,
+              },
+              {
+                label: "Guardar uma reserva ou documento",
+                slug: "reservas",
+                done: trip.documents.length > 0,
+                icon: Ticket,
+              },
+              {
+                label: "Registrar o primeiro gasto",
+                slug: "gastos",
+                done: trip.expenses.length > 0,
+                icon: Wallet,
+              },
+            ].map(({ label, slug, done, icon: Icon }) => (
+              <Link key={slug} href={`${base}/${slug}`}>
+                <Icon />
+                <span>
+                  {label}
+                  {done && <small> · Concluído</small>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
       <div className="trip-overview-grid">
         <div className="stack">
           <Card>
@@ -105,6 +143,7 @@ export function TripOverview({ trip }: { trip: Trip }) {
           </Card>
         </div>
         <div className="stack">
+          <BookingCard trip={trip} />
           <WeatherCard city={trip.destination} tripId={trip.id} />
           <Card>
             <span className="eyebrow">PRIMEIRO NO ROTEIRO</span>

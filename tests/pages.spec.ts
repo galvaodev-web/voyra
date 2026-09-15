@@ -22,7 +22,7 @@ test("Pages preview: navigation, local trip creation, reload and sign out", asyn
   await page.getByLabel("Orçamento total da viagem").fill("10000");
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Gastronomia", exact: true }).click();
-  await page.getByRole("button", { name: "Gerar minha viagem" }).click();
+  await page.getByRole("button", { name: "Criar minha viagem" }).click();
   await expect(page.getByRole("heading", { name: "Portugal 2027", exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Portugal 2027", exact: true })).toBeVisible();
@@ -34,6 +34,17 @@ test("Pages preview: navigation, local trip creation, reload and sign out", asyn
   await page.getByRole("button", { name: "Salvar atividade" }).click();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Visitar Belém" })).toBeVisible();
+  await page.getByRole("link", { name: "Reservas", exact: true }).first().click();
+  const booking = page.getByRole("link", { name: "Buscar hospedagem na Booking.com" });
+  await expect(booking).toHaveAttribute("href", "https://www.booking.com/");
+  await expect(booking).toHaveAttribute("target", "_blank");
+  await page.getByRole("button", { name: "Adicionar minha hospedagem" }).click();
+  await expect(page.getByLabel("Tipo", { exact: true })).toHaveValue("Hotel");
+  await page.getByLabel("Nome do documento").fill("Hotel em Lisboa");
+  await page.getByLabel("Referência ou observação").fill("Confirmação cadastrada manualmente");
+  await page.getByRole("button", { name: "Salvar documento" }).click();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Hotel em Lisboa" })).toBeVisible();
   await page.getByRole("button", { name: "Sair da conta" }).click();
   await expect(
     page.getByRole("heading", { name: "Sua próxima viagem em um só lugar." }),

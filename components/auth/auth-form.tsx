@@ -255,10 +255,15 @@ export function AuthForm({ mode }: { mode: "login" | "cadastro" | "esqueci-senha
               </form>
               {!reset && (
                 <>
-                  <div className="divider">ou continue com</div>
-                  <Button variant="secondary" onClick={() => void google()} loading={busy}>
-                    <span style={{ fontSize: 17, fontWeight: 700 }}>G</span> Google
-                  </Button>
+                  {process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true" &&
+                    isSupabaseConfigured && (
+                      <>
+                        <div className="divider">ou continue com</div>
+                        <Button variant="secondary" onClick={() => void google()} loading={busy}>
+                          <span style={{ fontSize: 17, fontWeight: 700 }}>G</span> Google
+                        </Button>
+                      </>
+                    )}
                   <div className="auth-switch">
                     {registerMode ? "Já tem uma conta?" : "Ainda não tem uma conta?"}{" "}
                     <Link href={registerMode ? "/login" : "/cadastro"}>

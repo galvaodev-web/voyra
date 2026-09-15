@@ -6,7 +6,7 @@ A versão no GitHub Pages é navegável e salva suas alterações neste navegado
 
 **Sua próxima viagem em um só lugar.** Aplicação de planejamento de viagens em português, com demonstração local e fluxos de contas reais, assinatura e publicação de roteiros preparados para configuração.
 
-Para o lançamento público, siga [docs/LAUNCH.md](docs/LAUNCH.md). O código inclui Checkout e portal Stripe, confirmação de assinatura por webhook, limite de viagens no banco, publicação pública com retirada, exclusão de conta e limpeza de anexos. A ativação exige Supabase, Stripe, domínio e políticas do operador; a instalação local sem credenciais continua em demonstração.
+Para o lançamento público, siga [docs/LAUNCH.md](docs/LAUNCH.md). O código inclui Checkout e portal Stripe, confirmação de assinatura por webhook, limite de viagens no banco, publicação pública com retirada, exclusão de conta e limpeza de anexos. Contas Free podem abrir com `NEXT_PUBLIC_BILLING_ENABLED=false`, Supabase, hospedagem HTTPS e políticas do operador. Stripe é necessário para ativar novas assinaturas com `NEXT_PUBLIC_BILLING_ENABLED=true`; a instalação local sem credenciais continua em demonstração.
 
 ## Executar
 
@@ -65,7 +65,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-publica-anon
 5. Em **Authentication → URL Configuration**, configure Site URL e Redirect URLs, incluindo:
    - `http://localhost:3000/auth/callback`
    - a URL equivalente do seu domínio de produção.
-6. Para entrada com Google, ative o provedor em **Authentication → Providers** e configure suas credenciais OAuth no Supabase e no console do Google.
+6. Para entrada com Google, ative o provedor em **Authentication → Providers**, configure suas credenciais OAuth no Supabase e no console do Google e defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` antes do build. Caso contrário, o acesso usa e-mail e senha.
 7. Reinicie o servidor Next.js. Crie uma conta pela aplicação e confirme o e-mail se a confirmação estiver ativada.
 
 Quando as duas variáveis Supabase estiverem preenchidas, **a entrada de demonstração é desativada** e a aplicação usa contas reais. Contas novas começam sem viagens; os dados fictícios não são inseridos no banco.
@@ -158,6 +158,8 @@ tests/                  Testes de navegação e fluxos com Playwright
 
 ## Integrações futuras e limites explícitos
 
+- **Booking.com:** links externos no resumo da viagem e em reservas, com cadastro manual da hospedagem. Configure `NEXT_PUBLIC_BOOKING_AFFILIATE_URL` com o link aprovado pela Booking.com/CJ e refaça o build para ativar o link de afiliado e seu aviso. Sem configuração, abre a Booking.com sem comissão. Não importa reservas nem consulta preços; veja [a configuração de lançamento](docs/LAUNCH.md).
+
 - **OpenAI:** substituir `travelAI.reply()` em `lib/ai.ts` por chamada a uma rota de servidor. Nenhuma chamada OpenAI ocorre hoje.
 - **Mapbox:** substituir o mapa ilustrativo pelo SDK e coordenadas reais; os marcadores atuais não representam distâncias reais.
 - **Clima:** conectar o contrato `WeatherProvider`. O componente usa valores de demonstração, sem previsão real.
@@ -190,7 +192,7 @@ npm run build
 npm test
 ```
 
-O Playwright inicia a versão de produção na porta 3000 se ainda não houver servidor. Os testes cobrem entrada de demonstração e proteção de rota, busca e favoritos, validação do wizard, persistência e CRUD de atividades, gastos, documentos, participantes, chat e páginas móveis. As capturas são geradas em `test-results/`.
+O Playwright inicia uma instância exclusiva da versão de produção na porta 3107 (ou `PLAYWRIGHT_PORT`), sem reutilizar servidores de outros projetos. Os testes cobrem entrada de demonstração e proteção de rota, busca e favoritos, validação do wizard, persistência e CRUD de atividades, gastos, documentos, participantes, chat e páginas móveis. As capturas são geradas em `test-results/`.
 
 Para padronizar a formatação, use `npm run format`. Os arquivos `AGENTS.md` e `CLAUDE.md` são instruções locais geradas pelo próprio Next.js 16 ao iniciar o servidor de desenvolvimento.
 

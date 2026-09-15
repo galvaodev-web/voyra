@@ -10,6 +10,7 @@ import { useVoyra } from "@/hooks/use-voyra";
 import { saveFile, getFileUrl, removeFile } from "@/lib/storage";
 import { dateLabel, uid } from "@/utils/format";
 import type { TravelDocument, Trip } from "@/types";
+import { BookingCard } from "@/components/trips/booking-card";
 const schema = z.object({
   name: z.string().trim().min(2, "Informe o nome"),
   type: z.string().min(1),
@@ -47,6 +48,7 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
   const { saveTrip } = useVoyra();
   const [tab, setTab] = useState("Todos");
   const [open, setOpen] = useState(false);
+  const [defaultType, setDefaultType] = useState("Ingresso");
   const [selected, setSelected] = useState<TravelDocument | null>(null);
   const [removing, setRemoving] = useState<TravelDocument | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,11 +88,27 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
           <h1>{bookingsOnly ? "Suas reservas, organizadas." : "Voyra Pass"}</h1>
           <p>O que você precisa, exatamente quando precisa.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button
+          onClick={() => {
+            setDefaultType("Ingresso");
+            setOpen(true);
+          }}
+        >
           <Plus size={16} />
           Adicionar documento
         </Button>
       </div>
+      {bookingsOnly && (
+        <div style={{ marginBottom: 24 }}>
+          <BookingCard
+            trip={trip}
+            onAdd={() => {
+              setDefaultType("Hotel");
+              setOpen(true);
+            }}
+          />
+        </div>
+      )}
       <Tabs
         items={["Todos", "Voo", "Hotel", "Ingresso", "Trem", "Seguro", "Reserva", "Pessoal"]}
         value={tab}
@@ -123,6 +141,7 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
       <Modal open={open} onClose={() => setOpen(false)} title="Adicionar ao Voyra Pass">
         <DocumentForm
           trip={trip}
+          defaultType={defaultType}
           onSave={async (values, file) => {
             let path: string | undefined;
             try {
@@ -259,9 +278,11 @@ export function DocumentCard({
 }
 function DocumentForm({
   trip,
+  defaultType,
   onSave,
 }: {
   trip: Trip;
+  defaultType: string;
   onSave: (values: Values, file?: File) => Promise<void>;
 }) {
   const [file, setFile] = useState<File>();
@@ -271,7 +292,7 @@ function DocumentForm({
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", type: "Ingresso", date: trip.start, time: "10:00", reference: "" },
+    defaultValues: { name: "", type: defaultType, date: trip.start, time: "10:00", reference: "" },
   });
   return (
     <form className="form-grid" onSubmit={handleSubmit((values) => onSave(values, file))}>

@@ -5,7 +5,7 @@ import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar, Footer } from "@/components/layout/navbar";
 import { Badge, Button, Card } from "@/components/ui";
-import { plans, type PaidPlan } from "@/lib/billing/plans";
+import { plans, billingEnabled, type PaidPlan } from "@/lib/billing/plans";
 import { openBilling } from "@/components/billing/billing-card";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 export function Pricing() {
@@ -62,7 +62,7 @@ export function Pricing() {
                 ) : (
                   <Button
                     loading={busy === plan.id}
-                    disabled={Boolean(busy) || !isSupabaseConfigured}
+                    disabled={Boolean(busy) || !isSupabaseConfigured || !billingEnabled}
                     variant={plan.id === "plus" ? "primary" : "secondary"}
                     onClick={() => void subscribe(plan.id as PaidPlan)}
                   >
@@ -81,6 +81,12 @@ export function Pricing() {
             <p className="notice">
               Você está conhecendo a demonstração. A contratação será disponibilizada na abertura
               das contas reais.
+            </p>
+          )}
+          {isSupabaseConfigured && !billingEnabled && (
+            <p className="notice">
+              Comece com o plano Free, com até duas viagens. Novas assinaturas pagas ainda não estão
+              disponíveis.
             </p>
           )}
         </section>

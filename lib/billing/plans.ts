@@ -1,3 +1,4 @@
+export const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 export const plans = [
   {
     id: "free",

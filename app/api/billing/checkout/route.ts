@@ -13,6 +13,11 @@ export async function POST(request: Request) {
   try {
     requireSameOrigin(request);
     const { user } = await requireUser();
+    if (process.env.NEXT_PUBLIC_BILLING_ENABLED !== "true")
+      throw new HttpError(
+        503,
+        "Novas assinaturas ainda não estão disponíveis. Você pode usar o plano Free.",
+      );
     const input = z
       .object({ plan: z.enum(["plus", "creator"]) })
       .safeParse(await jsonBody(request));

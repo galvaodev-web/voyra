@@ -4,6 +4,10 @@ O código está preparado para configurar contas, assinaturas e publicação. Se
 
 ## 1. Supabase e contas
 
+Para abrir inicialmente com contas Free, defina `NEXT_PUBLIC_BILLING_ENABLED=false`. O cadastro real, viagens, gastos, documentos e exclusão de conta continuam disponíveis; novas assinaturas ficam bloqueadas na interface e no checkout. Nesse modo, `check:launch` não exige Stripe. Mantenha o schema e a migração completos, inclusive as tabelas de assinatura. Caso já existam assinantes, preserve as credenciais Stripe para o portal, webhooks e exclusão de clientes.
+
+Login por e-mail é o fluxo inicial. Só defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` depois de configurar e validar o provedor Google. As duas opções são incorporadas no build e exigem novo deploy quando alteradas.
+
 1. Em um projeto novo, execute `supabase/schema.sql` e depois `supabase/migrations/20260911_launch.sql`. Em projeto existente com o schema original, execute somente a migração. Faça backup antes de migrar dados existentes.
 2. Configure URL e chave pública, e `SUPABASE_SERVICE_ROLE_KEY` exclusivamente no servidor. Use `.env.example` como referência; nunca publique `.env.local`.
 3. Ative confirmação de e-mail e configure SMTP do seu domínio. Configure limites de autenticação e proteção contra cadastro abusivo no provedor conforme sua operação.
@@ -11,6 +15,8 @@ O código está preparado para configurar contas, assinaturas e publicação. Se
 5. Contas novas começam vazias. Free permite duas viagens. O limite é aplicado no PostgreSQL com serialização por usuário, incluindo chamadas diretas ao banco. Após downgrade, viagens existentes continuam acessíveis; novas viagens ficam bloqueadas acima do limite.
 
 ## 2. Stripe: primeiro homologar, depois ativar
+
+Ative `NEXT_PUBLIC_BILLING_ENABLED=true` somente quando os itens desta seção estiverem configurados e validados. A verificação de lançamento então exige as credenciais live e os preços dos planos pagos.
 
 - Crie produtos Plus e Creator com preços recorrentes mensais em BRL, respectivamente **2490** e **4990 centavos**. A API rejeita configuração divergente dos preços exibidos. Para mudar valores, altere `lib/billing/plans.ts`, a validação em checkout e `scripts/check-launch.ts` juntos.
 - Defina `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PLUS`, `STRIPE_PRICE_CREATOR` e `STRIPE_WEBHOOK_SECRET`. Use credenciais e preços de teste na homologação; use valores live somente no ambiente público. Não misture IDs de ambientes.
@@ -67,7 +73,7 @@ npm run build:launch
 npm run start
 ```
 
-A verificação local de lançamento exige live e HTTPS. Para homologação com chaves de teste, use `npm run build` e siga os testes abaixo. Não existe deploy automático para produção neste repositório. Configure backups, retenção e acompanhamento de erros na hospedagem/Supabase/Stripe.
+A verificação local de lançamento exige HTTPS e, quando novas assinaturas estão habilitadas, Stripe live. Para homologação com chaves de teste, use `npm run build` e siga os testes abaixo. Não existe deploy automático para produção neste repositório. Configure backups, retenção e acompanhamento de erros na hospedagem/Supabase/Stripe.
 
 ## 6. Aceite no ambiente hospedado
 
@@ -78,5 +84,21 @@ A verificação local de lançamento exige live e HTTPS. Para homologação com 
 5. Confirme preços finais, portal, suporte, políticas e domínio. Faça a verificação remota com as credenciais live e só então abra ao público.
 
 ## Escopo que continua demonstrativo
+
+### Hospedagens Booking.com — links de afiliado opcionais
+
+O resumo da viagem e a página de reservas oferecem um link externo para a Booking.com e cadastro manual da confirmação, com o tipo Hotel preselecionado. Não há busca de preços, pagamento ou sincronização de reservas dentro do Voyra.
+
+1. Solicite participação pelo [programa oficial](https://www.booking.com/affiliate-program/v2/index.html), que atualmente direciona o cadastro para a CJ. Aguarde aprovação e confira as condições da oferta para sua conta.
+2. Configure `NEXT_PUBLIC_BOOKING_AFFILIATE_URL` com o link público de divulgação emitido pelo programa. Nunca use senha, token de API ou link de sessão. O link é público no navegador.
+3. Faça novo build/deploy: a variável é incorporada ao bundle. O Voyra preserva o link inteiro, sem acrescentar parâmetros de destino, datas ou identificação do usuário. Confira o destino final e a atribuição usando as ferramentas de validação do parceiro.
+4. Com link configurado, a interface mostra aviso de comissão e usa `rel="sponsored noopener"`. Sem link válido, abre `https://www.booking.com/` sem alegar comissão. O build de lançamento rejeita configuração malformada. A demonstração GitHub Pages mantém o link comum.
+5. Acompanhe cliques e reservas elegíveis nos relatórios da rede. Não há analytics próprio de cliques implementado nesta etapa nem garantia de atribuição apenas por configurar uma URL. Taxas, cancelamentos e pagamentos seguem a oferta aprovada.
+
+Destino, datas e número de viajantes aparecem no cartão para consulta; o usuário precisa preencher/conferir a busca na Booking.com. Não inferimos adultos, crianças ou quartos a partir do total de viajantes. Um formato de deep link só deve ser implementado depois de validar o suporte na oferta aprovada.
+
+Para pesquisar hospedagens dentro do Voyra, a [Demand API](https://developers.booking.com/demand/docs/getting-started/prerequisites) exige parceria gerenciada e credenciais próprias; o link de afiliado não concede esse acesso.
+
+### Outras integrações
 
 Voyra AI, previsão de clima, mapa ilustrativo, câmbio fixo e tradutor de frases não se tornam integrações ao preencher as chaves opcionais. Não há reserva de voos/hotéis, colaboração entre contas, push, offline real ou marketplace financeiro. Esses recursos continuam identificados na interface e não compõem a promessa dos planos pagos. Integrações adicionais exigem outro ciclo de implementação e homologação.

@@ -2,10 +2,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Bookmark, Star, Clock, ArrowRight } from "lucide-react";
+import { Bookmark, Clock, ArrowRight } from "lucide-react";
 import { routeTemplates } from "@/data/mock-data";
 import { useVoyra } from "@/hooks/use-voyra";
-import { money } from "@/utils/format";
 import { Navbar, Footer } from "@/components/layout/navbar";
 import { Badge, Button, Modal, EmptyState } from "@/components/ui";
 import { toast } from "sonner";
@@ -57,17 +56,7 @@ export function Routes({
             </div>
             <div className="route-info">
               <h3>{r.name}</h3>
-              <p>por {r.author}</p>
-              <div className="row between">
-                <span className="rating">
-                  <Star size={13} fill="currentColor" />
-                  {r.rating} <span className="muted">({r.reviews})</span>
-                </span>
-                <div className="route-price">
-                  <small>Preço proposto</small>
-                  {money(r.price)}
-                </div>
-              </div>
+              <p>Inspiração de roteiro · exemplo demonstrativo</p>
               <Button variant="secondary" onClick={() => setSelected(r)}>
                 Conhecer roteiro <ArrowRight size={15} />
               </Button>
@@ -86,7 +75,7 @@ export function Routes({
         </EmptyState>
       )}
       <p className="estimate-note">
-        Vitrine demonstrativa. Criadores, avaliações e preços fictícios. Compras não disponíveis.
+        Roteiros de exemplo para inspirar seu planejamento. Não há compra e venda de roteiros.
       </p>
       <Modal
         open={Boolean(selected)}
@@ -104,11 +93,10 @@ export function Routes({
             />
             <p>
               {selected.days} dias para explorar com calma, descobrir a cultura local e colecionar
-              boas histórias. Curadoria demonstrativa de {selected.author}.
+              boas histórias. Este é um exemplo para inspirar sua própria viagem.
             </p>
             <div className="notice">
-              Marketplace em preparação. Você pode salvar esta inspiração; a compra ainda não está
-              disponível.
+              Salve esta inspiração na sua coleção e use as ideias ao montar sua viagem.
             </div>
             <Button onClick={() => void save(selected.id)}>
               <Bookmark size={16} />
@@ -128,8 +116,8 @@ export function Routes({
         <section className="page-hero">
           <div className="container">
             <span className="eyebrow">CAMINHOS QUE VALEM SER COMPARTILHADOS</span>
-            <h1>Alguém já foi. Agora é sua vez.</h1>
-            <p>Roteiros de quem viveu a viagem, para inspirar a sua próxima história.</p>
+            <h1>Encontre inspiração para partir.</h1>
+            <p>Explore roteiros e descubra ideias para sua próxima viagem.</p>
           </div>
         </section>
         <section className="container section">{content}</section>

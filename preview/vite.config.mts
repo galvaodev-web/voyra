@@ -19,6 +19,9 @@ export default defineConfig({
     ],
   },
   define: {
+    "process.env.NEXT_PUBLIC_BILLING_ENABLED": '"false"',
+    "process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED": '"false"',
+    "process.env.NEXT_PUBLIC_BOOKING_AFFILIATE_URL": '""',
     "process.env.NEXT_PUBLIC_SUPABASE_URL": '""',
     "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY": '""',
     "process.env.NEXT_PUBLIC_DEMO_ENABLED": '"true"',

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button, Card, Badge } from "@/components/ui";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import type { PaidPlan, Plan } from "@/lib/billing/plans";
+import { billingEnabled } from "@/lib/billing/plans";
 import { navigateWithFreshSession } from "@/lib/session-navigation";
 
 export async function openBilling(action: "checkout" | "portal", plan?: PaidPlan) {
@@ -113,7 +114,13 @@ export function BillingCard() {
                 !["active", "trialing", "canceled"].includes(status.subscription.status) && (
                   <p>Há uma pendência na assinatura. Confira seu pagamento no portal.</p>
                 )}
-              {status.plan === "free" && (
+              {status.plan === "free" && !billingEnabled && (
+                <p>
+                  Seu plano Free permite até duas viagens. Novas assinaturas pagas ainda não estão
+                  disponíveis.
+                </p>
+              )}
+              {status.plan === "free" && billingEnabled && (
                 <div className="row" style={{ flexWrap: "wrap" }}>
                   <Button loading={busy} onClick={() => void open("checkout", "plus")}>
                     Assinar Plus

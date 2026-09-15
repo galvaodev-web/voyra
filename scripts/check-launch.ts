@@ -2,16 +2,16 @@ import { loadEnvConfig } from "@next/env";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 loadEnvConfig(process.cwd());
+const billingEnabled = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 const required = [
   "SITE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_PRICE_PLUS",
-  "STRIPE_PRICE_CREATOR",
   "SKYSCANNER_MEDIA_PARTNER_ID",
+  ...(billingEnabled
+    ? ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_PLUS", "STRIPE_PRICE_CREATOR"]
+    : []),
   "CRON_SECRET",
   "NEXT_PUBLIC_TERMS_URL",
   "NEXT_PUBLIC_PRIVACY_URL",
@@ -19,8 +19,22 @@ const required = [
 ];
 async function main() {
   const problems: string[] = [];
-  for (const name of required)
-    if (!process.env[name]?.trim()) problems.push(`Ausente: ${name}`);
+  if (!["true", "false"].includes(process.env.NEXT_PUBLIC_BILLING_ENABLED ?? ""))
+    problems.push(
+      "Defina NEXT_PUBLIC_BILLING_ENABLED=false para abrir contas Free, ou true para ativar assinaturas.",
+    );
+  const bookingAffiliate = process.env.NEXT_PUBLIC_BOOKING_AFFILIATE_URL?.trim();
+  if (bookingAffiliate) {
+    try {
+      const url = new URL(bookingAffiliate);
+      if (url.protocol !== "https:" || url.username || url.password) throw new Error();
+    } catch {
+      problems.push(
+        "NEXT_PUBLIC_BOOKING_AFFILIATE_URL deve ser o link público HTTPS aprovado pela Booking.com/CJ, sem credenciais.",
+      );
+    }
+  }
+  for (const name of required) if (!process.env[name]?.trim()) problems.push(`Ausente: ${name}`);
   if (process.env.NEXT_PUBLIC_DEMO_ENABLED !== "false")
     problems.push("Defina NEXT_PUBLIC_DEMO_ENABLED=false para lançamento.");
   for (const name of [
@@ -50,7 +64,11 @@ async function main() {
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.NEXT_PUBLIC_SUPPORT_EMAIL)
   )
     problems.push("NEXT_PUBLIC_SUPPORT_EMAIL inválido.");
-  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_"))
+  if (
+    billingEnabled &&
+    process.env.STRIPE_SECRET_KEY &&
+    !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")
+  )
     problems.push("O lançamento público requer chave Stripe live. Use test apenas na homologação.");
   if (process.env.STRIPE_WEBHOOK_SECRET && !process.env.STRIPE_WEBHOOK_SECRET.startsWith("whsec_"))
     problems.push("STRIPE_WEBHOOK_SECRET inválido.");
@@ -95,6 +113,12 @@ async function main() {
         throw new Error(
           `Não foi possível verificar a tabela ${table}. Aplique o schema e todas as migrations de produção.`,
         );
+    }
+    if (!billingEnabled) {
+      console.log(
+        "Tabelas verificadas por leitura. Lançamento Free: novas assinaturas desativadas. Valide cadastro, e-mail, recuperação de senha e Storage no ambiente hospedado.",
+      );
+      return;
     }
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
     for (const [name, cents] of [

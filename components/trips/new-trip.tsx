@@ -217,8 +217,8 @@ export function NewTrip() {
                 {tripDays(getValues("start"), getValues("end"))} dias · {getValues("travelers")}{" "}
                 viajantes · {money(getValues("budget"))}
                 <p>
-                  Seu espaço será criado para você montar o roteiro com liberdade. A Voyra AI estará
-                  disponível para sugestões simuladas.
+                  Seu espaço será criado para organizar atividades, gastos e reservas. Depois,
+                  adicione a primeira atividade para começar seu roteiro.
                 </p>
               </div>
             </>
@@ -237,7 +237,7 @@ export function NewTrip() {
               {step === 5 ? (
                 <>
                   <Sparkles size={16} />
-                  Gerar minha viagem
+                  Criar minha viagem
                 </>
               ) : (
                 <>

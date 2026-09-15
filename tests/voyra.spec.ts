@@ -52,7 +52,7 @@ test("create a trip, validate dates and persist activity CRUD", async ({ page })
   await page.getByLabel("Orçamento total da viagem").fill("10000");
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: "Gastronomia", exact: true }).click();
-  await page.getByRole("button", { name: "Gerar minha viagem" }).click();
+  await page.getByRole("button", { name: "Criar minha viagem" }).click();
   await expect(page.getByRole("heading", { name: "Portugal 2027", exact: true })).toBeVisible();
   const tripUrl = page.url();
   await page.goto(`${tripUrl}/roteiro`);

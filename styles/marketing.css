@@ -781,6 +781,30 @@
   color: var(--primary);
   font-size: 8px;
 }
+.faq-section {
+  max-width: 850px;
+}
+.getting-started {
+  margin-bottom: 24px;
+}
+.getting-started h2 {
+  font-size: 22px;
+  margin: 8px 0;
+}
+.faq-section details {
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+.faq-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+}
+.faq-section details p {
+  margin-top: 12px;
+  line-height: 1.8;
+  font-size: 14px;
+}
 .final-cta {
   text-align: center;
   padding-top: 90px;

@@ -39,22 +39,11 @@ export function HomeHero() {
         <p>
           Menos abas abertas. Mais mundo para descobrir.
           <br />
-          Planeje, organize e viva sua viagem com inteligência.
+          Roteiro, gastos e reservas juntos, do seu jeito.
         </p>
         <div className="hero-social">
-          <div className="avatar-stack">
-            {["M", "R", "A", "G"].map((letter, i) => (
-              <span
-                style={{ background: ["#d8b9a0", "#6b8978", "#ceb291", "#a3b8b3"][i] }}
-                key={letter}
-              >
-                {letter}
-              </span>
-            ))}
-          </div>
           <div>
-            <div className="stars">★★★★★</div>
-            <span>Para quem tem o mundo nos planos</span>
+            <span>Grátis para começar · Sem cartão de crédito</span>
           </div>
         </div>
       </div>
@@ -71,7 +60,7 @@ export function HomeHero() {
               <Plane size={17} /> Vamos tirar sua viagem do papel?
             </span>
             <span className="powered">
-              <Sparkles size={13} /> Um toque de inteligência em cada plano
+              <Sparkles size={13} /> Cada detalhe no seu lugar
             </span>
           </div>
           <form

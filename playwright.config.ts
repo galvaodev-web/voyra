@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-const port = process.env.PLAYWRIGHT_PORT ?? "3000";
+const port = process.env.PLAYWRIGHT_PORT ?? "3107";
 if (!/^\d{2,5}$/.test(port)) throw new Error("PLAYWRIGHT_PORT inválida");
 const baseURL = `http://localhost:${port}`;
 export default defineConfig({
@@ -24,7 +24,7 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });
