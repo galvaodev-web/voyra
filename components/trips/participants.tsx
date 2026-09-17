@@ -12,7 +12,7 @@ export function Participants({ trip }: { trip: Trip }) {
   const [busy, setBusy] = useState(false);
   const hotel = trip.expenses.find((e) => e.category === "Hospedagem");
   const memberCount = trip.members.length;
-  const total = trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+  const total = trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
   const share = memberCount ? total / memberCount : 0;
   return (
     <>
@@ -56,7 +56,7 @@ export function Participants({ trip }: { trip: Trip }) {
             {hotel ? (
               <>
                 <p style={{ margin: "15px 0", fontSize: 12 }}>
-                  {hotel.description} · {money(expenseBRL(hotel.amount, hotel.currency))}
+                  {hotel.description} · {money(expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate))}
                   <br />
                   Pago por {hotel.paidBy}. Dividido igualmente entre {memberCount} pessoas.
                 </p>
@@ -68,7 +68,7 @@ export function Participants({ trip }: { trip: Trip }) {
                         {m.name} deve a {hotel.paidBy}
                       </span>
                       <strong>
-                        {money(expenseBRL(hotel.amount, hotel.currency) / memberCount)}
+                        {money(expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate) / memberCount)}
                       </strong>
                     </div>
                   ))}
@@ -87,7 +87,7 @@ export function Participants({ trip }: { trip: Trip }) {
             {trip.members.map((m) => {
               const paid = trip.expenses
                 .filter((e) => e.paidBy === m.name)
-                .reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+                .reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
               const balance = paid - share;
               return (
                 <div className="split-row" key={m.id}>

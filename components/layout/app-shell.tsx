@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Luggage,
@@ -35,6 +35,7 @@ const nav = [
   { label: "Explorar", href: "/app/explorar", icon: Compass },
   { label: "Favoritos", href: "/app/favoritos", icon: Heart },
   { label: "Roteiros salvos", href: "/app/roteiros", icon: Bookmark },
+  { label: "Alertas", href: "/app/alertas", icon: Bell },
   { label: "Documentos", href: "/app/documentos", icon: Ticket },
   { label: "Perfil", href: "/app/perfil", icon: UserRound },
   { label: "Configurações", href: "/app/configuracoes", icon: Settings },
@@ -44,12 +45,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data, ready, error, reload } = useVoyra();
   const [more, setMore] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const [notificationItems, setNotificationItems] = useState<
+    Array<{ id: string; title: string; body: string; read_at: string | null; created_at: string }>
+  >([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const tripMatch = path.match(/^\/app\/viagens\/([^/]+)/);
   const tripId = tripMatch && tripMatch[1] !== "nova" ? tripMatch[1] : null;
   const base = tripId ? `/app/viagens/${tripId}` : null;
   const active = nav.find(
     (n) => path === n.href || (n.href === "/app/viagens" && path.startsWith("/app/viagens/")),
   );
+  useEffect(() => {
+    if (!notifications || !isSupabaseConfigured) return;
+    fetch("/api/notifications", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error);
+        setNotificationItems(payload);
+      })
+      .catch(() => toast.error("Não foi possível carregar as notificações."))
+      .finally(() => setNotificationsLoading(false));
+  }, [notifications]);
   async function logout() {
     try {
       if (isSupabaseConfigured) {
@@ -107,7 +123,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               className="icon-button"
               aria-label="Notificações"
-              onClick={() => setNotifications(true)}
+              onClick={() => {
+                setNotificationsLoading(true);
+                setNotifications(true);
+              }}
             >
               <Bell size={18} />
             </button>
@@ -170,11 +189,41 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="icon-tile">
             <Bell />
           </span>
-          <h3>Tudo em dia por aqui.</h3>
-          <p>
-            Alertas de reservas, clima e convites aparecerão aqui quando as integrações estiverem
-            disponíveis.
-          </p>
+          {notificationsLoading ? (
+            <p role="status">Carregando notificações…</p>
+          ) : notificationItems.length ? (
+            notificationItems.map((item) => (
+              <button
+                className="collection-option"
+                key={item.id}
+                onClick={async () => {
+                  if (!item.read_at) {
+                    await fetch("/api/notifications", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: item.id }),
+                    });
+                    setNotificationItems((current) =>
+                      current.map((value) =>
+                        value.id === item.id ? { ...value, read_at: new Date().toISOString() } : value,
+                      ),
+                    );
+                  }
+                }}
+              >
+                <span><strong>{item.title}</strong><small>{item.body}</small></span>
+                {!item.read_at && <Badge>Nova</Badge>}
+              </button>
+            ))
+          ) : (
+            <>
+              <h3>Tudo em dia por aqui.</h3>
+              <p>Seus alertas de preço e atualizações importantes aparecerão aqui.</p>
+            </>
+          )}
+          <Link className="button button-secondary" href="/app/alertas" onClick={() => setNotifications(false)}>
+            Gerenciar alertas
+          </Link>
         </div>
       </Modal>
     </div>

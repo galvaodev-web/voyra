@@ -29,7 +29,10 @@ export function TravelMode({ trip }: { trip: Trip }) {
     (a) => activity && a.day === activity.day && a.time > activity.time,
   );
   const available =
-    trip.budget - trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+    trip.budget -
+    trip.expenses
+      .filter((expense) => expense.status === "ACTUAL")
+      .reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
   async function help(question: string) {
     setBusy(true);
     setAnswer(await travelAI.reply(question, trip));

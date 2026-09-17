@@ -12,5 +12,5 @@ export const tripDays = (start: string, end: string) =>
 export const uid = () => crypto.randomUUID();
 export const safeNext = (value: string | null) =>
   value && /^\/app(?:\/|\?|$)/.test(value) && !/[\\\r\n]/.test(value) ? value : "/app/dashboard";
-export const expenseBRL = (amount: number, currency: string) =>
-  amount * ({ BRL: 1, EUR: 6, USD: 5.2 }[currency] ?? 1);
+export const expenseBRL = (amount: number, currency: string, rate?: number) =>
+  currency === "BRL" ? amount : rate ? amount * rate : 0;

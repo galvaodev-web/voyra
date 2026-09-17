@@ -18,6 +18,7 @@ const schema = z.object({
   category: z.string().min(1),
   date: z.string().min(1, "Escolha a data"),
   paidBy: z.string().min(1, "Escolha quem pagou"),
+  status: z.enum(["PLANNED", "ACTUAL"]),
 });
 type Values = z.infer<typeof schema>;
 export function Expenses({ trip }: { trip: Trip }) {
@@ -25,7 +26,10 @@ export function Expenses({ trip }: { trip: Trip }) {
   const [open, setOpen] = useState(false);
   const [removing, setRemoving] = useState<Expense | null>(null);
   const [busy, setBusy] = useState(false);
-  const total = trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+  const total = trip.expenses.reduce(
+    (n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate),
+    0,
+  );
   return (
     <>
       <div className="page-title">
@@ -65,7 +69,7 @@ export function Expenses({ trip }: { trip: Trip }) {
           {expenseCategories.map((category, i) => {
             const value = trip.expenses
               .filter((e) => e.category === category)
-              .reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+              .reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
             return (
               <div className="chart-bar" key={category}>
                 <div className="row between">
@@ -92,7 +96,8 @@ export function Expenses({ trip }: { trip: Trip }) {
             );
           })}
           <p className="small-text muted" style={{ marginTop: 17 }}>
-            Conversão demonstrativa: €1 = R$6; US$1 = R$5,20. Sem cotação em tempo real.
+            Gastos em outra moeda usam a cotação registrada no momento do cadastro. Referências
+            offline são identificadas como estimativas.
           </p>
         </Card>
       </div>
@@ -100,8 +105,36 @@ export function Expenses({ trip }: { trip: Trip }) {
         <ExpenseForm
           trip={trip}
           onSave={async (values) => {
+            let conversion: Pick<Expense, "baseAmount" | "exchangeRate" | "exchangeRateSource" | "exchangeRateObservedAt"> = {
+              baseAmount: values.amount,
+              exchangeRate: 1,
+              exchangeRateSource: "FRANKFURTER",
+              exchangeRateObservedAt: new Date().toISOString(),
+            };
+            if (values.currency !== "BRL") {
+              const response = await fetch(`/api/exchange-rate?base=${values.currency}&quote=BRL`);
+              const rate = (await response.json()) as {
+                rate?: number;
+                source?: "FRANKFURTER" | "FALLBACK";
+                observedAt?: string | null;
+                error?: string;
+              };
+              if (!response.ok || !rate.rate)
+                throw new Error(rate.error || "Não foi possível obter a cotação.");
+              conversion = {
+                baseAmount: values.amount * rate.rate,
+                exchangeRate: rate.rate,
+                exchangeRateSource: rate.source,
+                exchangeRateObservedAt: rate.observedAt ?? null,
+              };
+              if (rate.source === "FALLBACK")
+                toast.warning("Cotação ao vivo indisponível. O gasto foi salvo com referência offline identificada.");
+            }
             if (
-              await saveTrip({ ...trip, expenses: [...trip.expenses, { ...values, id: uid() }] })
+              await saveTrip({
+                ...trip,
+                expenses: [...trip.expenses, { ...values, ...conversion, id: uid() }],
+              })
             ) {
               toast.success("Gasto adicionado");
               setOpen(false);
@@ -145,12 +178,17 @@ export function ExpenseCard({ expense: e, onDelete }: { expense: Expense; onDele
       <div>
         <strong>{e.description}</strong>
         <p>
-          {e.category} · {dateLabel(e.date)} · {e.paidBy}
+          {e.category} · {dateLabel(e.date)} · {e.paidBy} · {e.status === "ACTUAL" ? "Realizado" : "Planejado"}
         </p>
       </div>
       <div className="expense-amount">
         <strong>{money(e.amount, e.currency)}</strong>
-        {e.currency !== "BRL" && <p>≈ {money(expenseBRL(e.amount, e.currency))}</p>}
+        {e.currency !== "BRL" && (
+          <p>
+            ≈ {money(expenseBRL(e.amount, e.currency, e.exchangeRate))}
+            {e.exchangeRateSource === "FALLBACK" ? " · referência offline" : ""}
+          </p>
+        )}
       </div>
       <button
         className="icon-button"
@@ -176,6 +214,7 @@ function ExpenseForm({ trip, onSave }: { trip: Trip; onSave: (values: Values) =>
       category: "Alimentação",
       date: trip.start,
       paidBy: trip.members[0]?.name ?? "Eu",
+      status: "PLANNED",
     },
   });
   return (
@@ -200,6 +239,10 @@ function ExpenseForm({ trip, onSave }: { trip: Trip; onSave: (values: Values) =>
         {expenseCategories.map((c) => (
           <option key={c}>{c}</option>
         ))}
+      </Select>
+      <Select label="Situação" {...register("status")}>
+        <option value="PLANNED">Planejado</option>
+        <option value="ACTUAL">Realizado</option>
       </Select>
       <Input label="Data" type="date" {...register("date")} error={errors.date?.message} />
       <div className="full">

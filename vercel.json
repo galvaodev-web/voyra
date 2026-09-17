@@ -1,3 +1,7 @@
 {
-  "crons": [{ "path": "/api/internal/storage-cleanup", "schedule": "0 3 * * *" }]
+  "crons": [
+    { "path": "/api/internal/storage-cleanup", "schedule": "0 3 * * *" },
+    { "path": "/api/internal/account-cleanup", "schedule": "30 3 * * *" },
+    { "path": "/api/internal/price-alerts", "schedule": "0 */6 * * *" }
+  ]
 }

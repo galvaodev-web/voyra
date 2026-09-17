@@ -22,6 +22,11 @@ export type Expense = {
   category: string;
   date: string;
   paidBy: string;
+  status?: "PLANNED" | "ACTUAL";
+  baseAmount?: number;
+  exchangeRate?: number;
+  exchangeRateSource?: "FRANKFURTER" | "FALLBACK";
+  exchangeRateObservedAt?: string | null;
 };
 export type TravelDocument = {
   id: string;
@@ -66,6 +71,8 @@ export type Trip = {
   tips?: string;
   includeCover?: boolean;
   completedAt?: string;
+  sourceSearchId?: string;
+  searchPreferences?: string[];
 };
 export type Destination = {
   id: string;

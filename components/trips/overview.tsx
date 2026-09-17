@@ -16,13 +16,19 @@ import { BookingCard } from "@/components/trips/booking-card";
 import type { Trip } from "@/types";
 import { expenseBRL, money, tripDays } from "@/utils/format";
 export function BudgetStats({ trip }: { trip: Trip }) {
-  const spent = trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency), 0);
+  const planned = trip.expenses
+    .filter((expense) => (expense.status ?? "PLANNED") === "PLANNED")
+    .reduce((sum, expense) => sum + expenseBRL(expense.amount, expense.currency, expense.exchangeRate), 0);
+  const spent = trip.expenses
+    .filter((expense) => expense.status === "ACTUAL")
+    .reduce((sum, expense) => sum + expenseBRL(expense.amount, expense.currency, expense.exchangeRate), 0);
   return (
     <div className="stats-grid">
       {[
         { label: "Orçamento total", value: trip.budget },
-        { label: "Gasto previsto", value: spent },
-        { label: "Disponível", value: trip.budget - spent },
+        { label: "Planejado", value: planned },
+        { label: "Realizado", value: spent },
+        { label: "Disponível", value: trip.budget - planned - spent },
       ].map((s) => (
         <Card className="stat-card" key={s.label}>
           <span className="icon-tile">
