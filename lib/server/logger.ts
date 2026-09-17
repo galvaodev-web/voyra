@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { captureServerError } from "@/lib/server/error-tracking";
 
 type LogLevel = "info" | "warn" | "error";
 type LogValue = string | number | boolean | null | undefined;
@@ -33,7 +34,10 @@ export function structuredLog(
     userId: context.userId,
     ...fields,
   });
-  if (level === "error") console.error(payload);
+  if (level === "error") {
+    console.error(payload);
+    captureServerError(event, context, fields);
+  }
   else if (level === "warn") console.warn(payload);
   else console.info(payload);
 }

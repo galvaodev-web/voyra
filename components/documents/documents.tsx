@@ -63,8 +63,13 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
     try {
       const url = await getFileUrl(doc.file);
       if (url.startsWith("data:")) {
-        const response = await fetch(url);
-        const blob = await response.blob();
+        const [header, payload] = url.split(",", 2);
+        if (!header || !payload || !header.includes(";base64"))
+          throw new Error("Arquivo local inválido.");
+        const bytes = Uint8Array.from(atob(payload), (character) => character.charCodeAt(0));
+        const blob = new Blob([bytes], {
+          type: header.match(/^data:([^;]+)/)?.[1] ?? "application/octet-stream",
+        });
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobUrl;
