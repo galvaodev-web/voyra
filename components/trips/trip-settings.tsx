@@ -6,7 +6,7 @@ import { Button, Card, Input, Select, Modal } from "@/components/ui";
 import { useVoyra } from "@/hooks/use-voyra";
 import type { Trip } from "@/types";
 export function TripSettings({ trip }: { trip: Trip }) {
-  const { saveTrip, deleteTrip } = useVoyra();
+  const { saveTrip, deleteTrip, reload } = useVoyra();
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -24,16 +24,30 @@ export function TripSettings({ trip }: { trip: Trip }) {
           onSubmit={async (e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
+            const nextStatus = String(f.get("status"));
             setBusy(true);
-            if (
-              await saveTrip({
+            const saved = await saveTrip({
                 ...trip,
                 name: String(f.get("name")).trim(),
                 budget: Number(f.get("budget")),
-                status: String(f.get("status")),
+                status: nextStatus === "Concluída" && !trip.completedAt ? trip.status : nextStatus,
                 progress: Number(f.get("progress")),
-              })
-            ) {
+              });
+            if (saved && nextStatus === "Concluída" && !trip.completedAt) {
+              const response = await fetch(`/api/trips/${trip.id}/complete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ analyticsConsent: false }),
+              });
+              const result = (await response.json()) as { error?: string };
+              if (!response.ok) {
+                toast.error(result.error ?? "Não foi possível concluir a viagem.");
+                setBusy(false);
+                return;
+              }
+              reload();
+              toast.success("Viagem concluída. Passport e Travel Tokens liberados.");
+            } else if (saved) {
               toast.success("Viagem atualizada");
             }
             setBusy(false);
@@ -55,11 +69,17 @@ export function TripSettings({ trip }: { trip: Trip }) {
               defaultValue={trip.budget}
               required
             />
-            <Select label="Status" name="status" defaultValue={trip.status}>
+            <Select
+              label="Status"
+              name="status"
+              defaultValue={trip.completedAt ? "Concluída" : trip.status}
+              disabled={Boolean(trip.completedAt)}
+            >
               {["Planejando", "Em viagem", "Concluída"].map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </Select>
+            {trip.completedAt && <input type="hidden" name="status" value="Concluída" />}
           </div>
           <Input
             label="Planejamento concluído (%)"

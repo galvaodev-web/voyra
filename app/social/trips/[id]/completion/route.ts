@@ -12,7 +12,7 @@ export async function GET(
     const { client, user } = await requireBearerUser(request);
     const result = await client
       .from("trips")
-      .select("id,name,destination,start_date,end_date,data")
+      .select("id,name,destination,start_date,end_date,data,completion_status,completed_at")
       .eq("id", tripId)
       .eq("owner_id", user.id)
       .maybeSingle();
@@ -25,7 +25,7 @@ export async function GET(
       activities?: unknown;
     };
     const today = new Date().toISOString().slice(0, 10);
-    if (data.status !== "Concluída" || result.data.end_date > today)
+    if (result.data.completion_status !== "COMPLETED" || !result.data.completed_at || result.data.end_date > today)
       throw new HttpError(409, "Conclua a viagem no Voyra Travel após a data final para liberar o Passport.");
 
     const route = await client
@@ -40,6 +40,23 @@ export async function GET(
     const end = new Date(`${result.data.end_date}T00:00:00Z`);
     const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1);
     const activities = Array.isArray(data.activities) ? data.activities : [];
+    const cities = Array.from(
+      new Set([
+        result.data.destination,
+        ...activities.flatMap((activity) => {
+          if (!activity || typeof activity !== "object") return [];
+          const city = (activity as Record<string, unknown>).city;
+          return typeof city === "string" && city.trim() ? [city.trim()] : [];
+        }),
+      ]),
+    ).slice(0, 50);
+    const tokenResult = await client
+      .from("travel_tokens")
+      .select("public_id,share_slug,token_type,destination,country_name,cities,travel_year,start_date,end_date,days,verified_place_count,serial_number,achievement_code,rarity,verification,issued_at")
+      .eq("trip_id", tripId)
+      .eq("status", "ACTIVE")
+      .order("issued_at");
+    if (tokenResult.error) throw tokenResult.error;
 
     return Response.json({
       trip_id: result.data.id,
@@ -50,6 +67,8 @@ export async function GET(
       end_date: result.data.end_date,
       days,
       place_count: activities.length,
+      cities,
+      tokens: tokenResult.data ?? [],
       public_route_id: route.data?.id ?? null,
     });
   } catch (error) {

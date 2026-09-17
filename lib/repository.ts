@@ -13,7 +13,7 @@ export async function loadRemote(): Promise<AppData> {
       profile: { name: "Viajante", email: "", city: "" },
     };
   const [trips, profile, favorites] = await Promise.all([
-    client.from("trips").select("id,data,revision"),
+    client.from("trips").select("id,data,revision,completion_status,completed_at"),
     client.from("profiles").select("name, city, saved_routes").eq("id", user.id).maybeSingle(),
     client.from("favorites").select("destination_id").eq("user_id", user.id),
   ]);
@@ -24,6 +24,8 @@ export async function loadRemote(): Promise<AppData> {
       ...(row.data as Trip),
       id: row.id,
       revision: row.revision,
+      completedAt:
+        row.completion_status === "COMPLETED" ? (row.completed_at ?? undefined) : undefined,
     })),
     favorites: (favorites.data ?? []).map((row) => row.destination_id),
     savedRoutes: profile.data?.saved_routes ?? [],

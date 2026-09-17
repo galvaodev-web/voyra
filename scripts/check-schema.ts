@@ -27,6 +27,7 @@ async function main() {
   await db.exec(await readFile("supabase/migrations/20260911_launch.sql", "utf8"));
   await db.exec(await readFile("supabase/migrations/20260912_marketplace.sql", "utf8"));
   await db.exec(await readFile("supabase/migrations/20260915_price_engine.sql", "utf8"));
+  await db.exec(await readFile("supabase/migrations/20260918_web_1_0.sql", "utf8"));
   const alice = "11111111-1111-4111-8111-111111111111";
   const bob = "22222222-2222-4222-8222-222222222222";
   const trip = "33333333-3333-4333-8333-333333333333";
@@ -159,6 +160,40 @@ async function main() {
       [id, alice],
     );
   await insertTrip(secondTrip);
+  await db.query(
+    "update public.trips set start_date='2020-01-01',end_date='2020-01-03',data=$1 where id=$2",
+    [
+      {
+        country: "Portugal",
+        countryCode: "PT",
+        originCountryCode: "BR",
+        activities: [{ name: "Alfama" }],
+      },
+      secondTrip,
+    ],
+  );
+  await assert.rejects(
+    db.query("update public.trips set completion_status='COMPLETED' where id=$1", [secondTrip]),
+    /SERVER_COMPLETION_REQUIRED/,
+  );
+  const completedOnce = await db.query<{ completed_at: string }>(
+    "select public.complete_trip($1) as completed_at",
+    [secondTrip],
+  );
+  const completedTwice = await db.query<{ completed_at: string }>(
+    "select public.complete_trip($1) as completed_at",
+    [secondTrip],
+  );
+  assert.equal(
+    new Date(completedOnce.rows[0].completed_at).toISOString(),
+    new Date(completedTwice.rows[0].completed_at).toISOString(),
+  );
+  assert.equal(
+    (await db.query("select id from public.travel_tokens where trip_id=$1", [secondTrip])).rows
+      .length,
+    4,
+    "Completion issues one Journey, Country, City and first-trip Achievement exactly once",
+  );
   await assert.rejects(insertTrip(thirdTrip), /até 2 viagens/);
   await assert.rejects(
     db.query("select public.publish_trip($1,$2)", [trip, "Dicas públicas para testar."]),
@@ -176,6 +211,34 @@ async function main() {
     ),
     /permission denied/,
   );
+  await db.exec("reset role");
+  const alert = "66666666-6666-4666-8666-666666666666";
+  await db.query(
+    `insert into public.price_alerts(id,user_id,origin,destination,target_price,currency)
+     values($1,$2,'Brasília','Lisboa',5000,'BRL')`,
+    [alert, alice],
+  );
+  await db.query(
+    `insert into public.price_snapshots(user_id,provider,origin,destination,travelers,total_price,currency,price_type,confidence,observed_at)
+     values($1,'provider-test','Brasília','Lisboa',1,4500,'BRL','LIVE',0.9,now())`,
+    [alice],
+  );
+  assert.equal(
+    (await db.query("select * from public.process_due_price_alerts(10)")).rows.length,
+    1,
+    "A live price under target creates one alert notification",
+  );
+  assert.equal(
+    (await db.query("select * from public.process_due_price_alerts(10)")).rows.length,
+    0,
+    "Price alert processing is idempotent and observes cooldown",
+  );
+  assert.equal(
+    (await db.query("select id from public.notifications where user_id=$1", [alice])).rows.length,
+    1,
+  );
+  await db.exec("set role authenticated");
+  await assert.rejects(db.query("select * from public.process_due_price_alerts(10)"), /permission denied/);
   await db.exec("reset role");
   await db.query(
     "insert into public.billing_customers(user_id,customer_id) values($1,'cus_alice')",
@@ -339,7 +402,7 @@ async function main() {
   );
   await db.close();
   console.log(
-    "Schema validado: RLS entre contas e Storage; limite Free; cobrança restrita ao servidor; eventos duplicados/atrasados; publicação sem dados privados; cancelamento, expiração e retirada de publicação.",
+    "Schema validado: RLS e Storage; conclusão server-side e Tokens idempotentes; limite Free; cobrança restrita ao servidor; eventos duplicados/atrasados; publicação sem dados privados; cancelamento, expiração e retirada de publicação.",
   );
 }
 main().catch((error) => {
