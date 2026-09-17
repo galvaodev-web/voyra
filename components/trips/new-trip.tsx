@@ -51,6 +51,15 @@ export function NewTrip() {
   const [step, setStep] = useState(0);
   const [styles, setStyles] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const sourceDuration = Number(params.get("duracao")) || undefined;
+  const sourceStart = params.get("inicio") ?? "";
+  const sourceEnd = params.get("fim") ?? (
+    sourceStart && sourceDuration
+      ? new Date(new Date(`${sourceStart}T12:00:00Z`).getTime() + (sourceDuration - 1) * 86_400_000)
+          .toISOString()
+          .slice(0, 10)
+      : ""
+  );
   const {
     register,
     trigger,
@@ -62,8 +71,8 @@ export function NewTrip() {
     defaultValues: {
       origin: params.get("origem") ?? "",
       destination: params.get("destino") ?? "",
-      start: params.get("inicio") ?? "",
-      end: "",
+      start: sourceStart,
+      end: sourceEnd,
       travelers: Number(params.get("pessoas")) || 1,
       budget: Number(params.get("orcamento")) || 8000,
     },
@@ -105,6 +114,8 @@ export function NewTrip() {
       documents: [],
       members: [{ id: uid(), name: data.profile.name, role: "Administrador" }],
       notes: [],
+      sourceSearchId: params.get("busca") ?? undefined,
+      searchPreferences: (params.get("preferencias") ?? "").split(",").filter(Boolean),
     });
     setBusy(false);
     if (success) {

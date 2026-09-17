@@ -202,6 +202,8 @@ export function BudgetDiscovery() {
                         origin,
                         maxBudget: Number(budget),
                         searchId: search.searchId,
+                        durationDays: Number(days),
+                        preferences: [],
                       }}
                       key={option.destinationId}
                     />

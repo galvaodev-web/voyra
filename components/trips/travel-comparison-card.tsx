@@ -18,6 +18,10 @@ type PlanningContext = {
   origin: string;
   maxBudget: number;
   searchId: string | null;
+  durationDays: number;
+  startDate?: string;
+  endDate?: string;
+  preferences?: string[];
 };
 
 export function TravelComparisonCard({
@@ -37,6 +41,10 @@ export function TravelComparisonCard({
     duracao: String(option.durationDays),
   });
   if (planning.searchId) query.set("busca", planning.searchId);
+  if (planning.startDate) query.set("inicio", planning.startDate);
+  if (planning.endDate) query.set("fim", planning.endDate);
+  if (planning.preferences?.length)
+    query.set("preferencias", planning.preferences.join(","));
 
   return (
     <article className="destination-card comparison-card">
