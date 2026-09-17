@@ -1,16 +1,16 @@
 import { z } from "zod";
-import { apiError, HttpError, jsonBody, requireSameOrigin, requireUser } from "@/lib/server/http";
+import { apiError, HttpError, jsonBody } from "@/lib/server/http";
 import { deleteVoyraAccount } from "@/lib/server/delete-account";
+import { requireBearerUser } from "@/lib/supabase/bearer";
+
 export async function DELETE(request: Request) {
   try {
-    requireSameOrigin(request);
-    const { user, client } = await requireUser();
-    const input = z
+    const { user } = await requireBearerUser(request);
+    const parsed = z
       .object({ confirmation: z.literal("EXCLUIR") })
       .safeParse(await jsonBody(request));
-    if (!input.success) throw new HttpError(400, "Digite EXCLUIR para confirmar.");
+    if (!parsed.success) throw new HttpError(400, "Digite EXCLUIR para confirmar.");
     await deleteVoyraAccount(user.id);
-    await client.auth.signOut({ scope: "local" });
     return Response.json({ deleted: true });
   } catch (error) {
     return apiError(error);

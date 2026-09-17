@@ -571,6 +571,11 @@
   padding: 4px 6px;
   text-transform: uppercase;
 }
+.comparison-select {
+  width: 100%;
+  margin-top: 14px;
+  justify-content: center;
+}
 .live-price-tag {
   background: #dff7e9;
 }

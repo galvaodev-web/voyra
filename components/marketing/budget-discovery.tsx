@@ -196,7 +196,15 @@ export function BudgetDiscovery() {
               ? search.options
                   .slice(0, 4)
                   .map((option) => (
-                    <TravelComparisonCard option={option} key={option.destinationId} />
+                    <TravelComparisonCard
+                      option={option}
+                      planning={{
+                        origin,
+                        maxBudget: Number(budget),
+                        searchId: search.searchId,
+                      }}
+                      key={option.destinationId}
+                    />
                   ))
               : initialResults
                   .slice(0, 4)

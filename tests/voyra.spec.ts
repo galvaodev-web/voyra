@@ -22,6 +22,17 @@ test("landing, discovery, favorites and route protection", async ({ page }) => {
   await page.getByRole("button", { name: "Descobrir destinos" }).click();
   await expect(page.getByText("Total para 1 pessoa").first()).toBeVisible();
   await expect(page.getByText("Preço estimado").first()).toBeVisible();
+  await expect(page.getByText(/Confiança da estimativa:/).first()).toBeVisible();
+  const planningHref = await page
+    .getByRole("link", { name: "Selecionar destino" })
+    .first()
+    .getAttribute("href");
+  const planningUrl = new URL(planningHref!, "http://localhost");
+  expect(planningUrl.pathname).toBe("/planejar");
+  expect(planningUrl.searchParams.get("origem")).toBe("São Paulo, Brasil");
+  expect(planningUrl.searchParams.get("pessoas")).toBe("1");
+  expect(planningUrl.searchParams.get("orcamento")).toBe("5000");
+  expect(planningUrl.searchParams.get("duracao")).toBe("7");
   await page.screenshot({ path: "test-results/search-comparison-desktop.png", fullPage: true });
   await page.getByLabel("Orçamento", { exact: true }).selectOption("3000");
   await page.getByLabel("Pessoas para orçamento").selectOption("4");

@@ -51,8 +51,11 @@ Travel exposes bearer-authenticated, privacy-safe endpoints under `/social` for:
 - publishing a sanitized trip projection;
 - importing a public community route;
 - listing and summarizing completed trips for Passport/Recap.
+- deleting the shared account after explicit confirmation from Social; this reuses the same Stripe, Storage and Auth cleanup as Travel account settings.
 
 Voyra Social must point `VOYRA_TRAVEL_API_URL` at this Travel origin. Both applications must use the same Supabase Auth project.
+
+Use `docs/STAGING.md` and the Social staging checklist before promotion. Account deletion spans Social Storage, Travel Storage, Stripe and Supabase Auth, so it is repeatable but not a distributed transaction; monitor failures by request ID.
 
 ## 7. Launch gate
 

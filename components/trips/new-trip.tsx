@@ -65,7 +65,7 @@ export function NewTrip() {
       start: params.get("inicio") ?? "",
       end: "",
       travelers: Number(params.get("pessoas")) || 1,
-      budget: 8000,
+      budget: Number(params.get("orcamento")) || 8000,
     },
   });
   const fields: (keyof Values)[][] = [

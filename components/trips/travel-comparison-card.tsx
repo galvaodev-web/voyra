@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Heart } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import { useVoyra } from "@/hooks/use-voyra";
 import type { NormalizedTravelOption } from "@/lib/travel/contracts";
 import { cn, money } from "@/utils/format";
@@ -14,9 +14,29 @@ const labels = {
   activities: "Passeios",
 } as const;
 
-export function TravelComparisonCard({ option }: { option: NormalizedTravelOption }) {
+type PlanningContext = {
+  origin: string;
+  maxBudget: number;
+  searchId: string | null;
+};
+
+export function TravelComparisonCard({
+  option,
+  planning,
+}: {
+  option: NormalizedTravelOption;
+  planning: PlanningContext;
+}) {
   const { data, toggleFavorite } = useVoyra();
   const saved = data.favorites.includes(option.destinationId);
+  const query = new URLSearchParams({
+    destino: option.destination,
+    origem: planning.origin,
+    pessoas: String(option.travelers),
+    orcamento: String(planning.maxBudget),
+    duracao: String(option.durationDays),
+  });
+  if (planning.searchId) query.set("busca", planning.searchId);
 
   return (
     <article className="destination-card comparison-card">
@@ -51,13 +71,6 @@ export function TravelComparisonCard({ option }: { option: NormalizedTravelOptio
               {option.country} · {option.durationDays} dias
             </p>
           </div>
-          <Link
-            href={`/planejar?destino=${encodeURIComponent(option.destination)}`}
-            className="round-link"
-            aria-label={`Planejar viagem para ${option.destination}`}
-          >
-            <ArrowUpRight size={20} />
-          </Link>
         </div>
         <div className="comparison-total">
           <small>
@@ -65,6 +78,7 @@ export function TravelComparisonCard({ option }: { option: NormalizedTravelOptio
           </small>
           <strong>{money(option.totalEstimatedPrice)}</strong>
           <span>{money(option.pricePerPerson)} por pessoa</span>
+          <span>Confiança da estimativa: {Math.round(option.confidence * 100)}%</span>
         </div>
         <dl className="price-breakdown">
           {Object.entries(option.breakdown).map(([key, value]) => (
@@ -79,6 +93,12 @@ export function TravelComparisonCard({ option }: { option: NormalizedTravelOptio
             <span key={tag}>{tag}</span>
           ))}
         </div>
+        <Link
+          href={`/planejar?${query.toString()}`}
+          className="button button-primary comparison-select"
+        >
+          Selecionar destino <ArrowRight size={16} />
+        </Link>
       </div>
     </article>
   );
