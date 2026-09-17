@@ -12,7 +12,8 @@ For a new environment, apply the Travel base first, then the launch and marketpl
 2. `supabase/migrations/20260911_launch.sql`
 3. `supabase/migrations/20260912_marketplace.sql`
 4. `supabase/migrations/20260915_price_engine.sql`
-5. Voyra Social migrations in filename order
+5. `supabase/migrations/20260918_web_1_0.sql`
+6. Voyra Social migrations in filename order
 
 Never disable RLS to fix integration errors.
 
@@ -42,6 +43,8 @@ The partner remains responsible for final inventory, price confirmation, ticket/
 
 The migration creates `travel_searches`, `search_preferences`, `provider_results`, `offers`, `price_snapshots`, `price_alerts`, `notification_preferences`, `provider_health` and `analytics_events`. Estimated catalog values are never written to `price_snapshots`. Configure `RATE_LIMIT_SECRET` with at least 32 random bytes; identifiers are HMAC-pseudonymized before storage.
 
+The Web 1.0 migration adds trusted trip completion, idempotent Voyra Tokens, durable account-deletion jobs, exchange-rate cache and transactional alert matching. `/api/internal/price-alerts` runs every six hours and only matches `LIVE` snapshots. Configure Resend to add email; in-app notifications do not depend on it.
+
 ## 6. Social integration
 
 Travel exposes bearer-authenticated, privacy-safe endpoints under `/social` for:
@@ -56,6 +59,8 @@ Travel exposes bearer-authenticated, privacy-safe endpoints under `/social` for:
 Voyra Social must point `VOYRA_TRAVEL_API_URL` at this Travel origin. Both applications must use the same Supabase Auth project.
 
 Use `docs/STAGING.md` and the Social staging checklist before promotion. Account deletion spans Social Storage, Travel Storage, Stripe and Supabase Auth, so it is repeatable but not a distributed transaction; monitor failures by request ID.
+
+See `docs/BACKUP_RESTORE.md` and `PRODUCTION_CHECKLIST.md` before promotion.
 
 ## 7. Launch gate
 

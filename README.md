@@ -37,7 +37,7 @@ Os dados de exemplo e alterações são salvos no `localStorage` deste navegador
 
 O catálogo interno produz somente valores `ESTIMATED`, com confiança e composição explícitas. Um resultado só pode ser `LIVE` quando providers reais entregam os componentes primários; apenas ofertas `LIVE` geram `price_snapshots`. Buscas autenticadas são persistidas atomicamente para suportar histórico e alertas futuros.
 
-O `package-lock.json` fixa as versões instaladas. A integração Stripe usa chaves privadas apenas no servidor. Nenhum cartão é armazenado pela aplicação.
+O `package-lock.json` fixa as versões instaladas. A integração Stripe usa chaves privadas apenas no servidor. Nenhum cartão é armazenado pela aplicação. Alertas de preço comparam somente snapshots `LIVE`, têm cooldown e notificação in-app; e-mail depende de Resend configurado.
 
 ## O que funciona
 
@@ -46,7 +46,8 @@ O `package-lock.json` fixa as versões instaladas. A integração Stripe usa cha
 - Login, cadastro, recuperação de senha e entrada Google quando Supabase estiver configurado.
 - Dashboard; criação de viagem em seis etapas com validação; edição do nome, orçamento, progresso e status.
 - Roteiro diário com adição, edição e exclusão de atividades.
-- Gastos com categorias, gráfico, exclusão, totais e divisão entre participantes cadastrados.
+- Gastos planejados e realizados, categorias, cotação persistida com fonte/horário, gráfico, exclusão, totais e divisão entre participantes cadastrados.
+- Conclusão de viagem verificada no servidor, Voyra Tokens idempotentes (`JOURNEY`, `COUNTRY`, `CITY`, `ACHIEVEMENT`) e página pública do Token.
 - Voyra Pass: voos, hotéis, ingressos, trem, seguro, reservas e documentos pessoais; cadastro, anexos, abertura e remoção.
 - Mapa ilustrativo selecionável com abertura da localização no Google Maps.
 - Modo Viagem, ajuda contextual, chat Voyra AI simulado e clima demonstrativo.
@@ -58,7 +59,7 @@ O `package-lock.json` fixa as versões instaladas. A integração Stripe usa cha
 ## Conectar o Supabase
 
 1. Crie um projeto no Supabase.
-2. Execute **uma vez**, em um projeto novo, o arquivo `supabase/schema.sql` no SQL Editor. Depois aplique, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql` e `20260915_price_engine.sql`. Em projetos existentes, aplique somente as migrations pendentes; não execute o schema inicial novamente.
+2. Execute **uma vez**, em um projeto novo, `supabase/schema.sql`. Depois aplique, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql`, `20260915_price_engine.sql` e `20260918_web_1_0.sql`. Em projetos existentes, aplique somente migrations pendentes; não execute o schema inicial novamente.
 3. Copie `.env.example` para `.env.local`.
 4. Preencha:
 
@@ -173,7 +174,7 @@ tests/                  Testes de navegação e fluxos com Playwright
 - **Comunidade:** com Supabase, “Publicar roteiro” gera uma página pública e inclui o roteiro na busca. Só campos selecionados são copiados; documentos, despesas, participantes, diário e datas de calendário não são publicados. O autor pode atualizar ou retirar a publicação. Sem Supabase, permanece a prévia local. Não há compra e venda de roteiros, repasse a criadores ou marketplace financeiro.
 - **Tradutor:** dicionário pequeno de frases; voz e câmera são prévias sem captura real.
 - **Modo Viagem:** hora, clima, distância e sugestão diária do exemplo Itália são simulados. Não há localização, notificações push ou modo offline real.
-- **Câmbio:** apenas estimativas fixas: EUR 1 = BRL 6; USD 1 = BRL 5,20.
+- **Câmbio:** Frankfurter é consultado no servidor e armazenado com fonte/horário. Se estiver indisponível, a referência offline configurada é identificada como fallback e nunca apresentada como cotação ao vivo.
 - **Emergência:** 112 somente na viagem da Itália; outros países orientam consulta local. Busca de hospitais abre serviço externo e não afirma proximidade em tempo real.
 
 ## Build, qualidade e testes
