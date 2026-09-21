@@ -1,7 +1,7 @@
 name: Publish Voyra demo
 on:
   push:
-    branches: [main, release/v1-final]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
