@@ -110,8 +110,9 @@ export function AccountPage({ section }: { section: string }) {
                 : "Demonstração ativa. Suas alterações ficam neste navegador."}
             </div>
             <p className="small-text" style={{ marginTop: 18 }}>
-              A Voyra AI, o clima e o mapa interno são demonstrações. Reservas são cadastradas
-              manualmente. Convites por e-mail e sincronização offline ainda não estão disponíveis.
+              Voyra AI e clima dependem de providers server-side configurados. O mapa interno é
+              ilustrativo. Reservas são cadastradas manualmente; convites por e-mail e sincronização
+              offline ainda não estão disponíveis.
             </p>
           </Card>
           <Card>
@@ -122,16 +123,34 @@ export function AccountPage({ section }: { section: string }) {
             </p>
             <Button
               variant="secondary"
-              onClick={() => {
-                const url = URL.createObjectURL(
-                  new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
-                );
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "meus-dados-voyra.json";
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-                toast.success("Exportação preparada");
+              loading={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  let payload: unknown = data;
+                  if (isSupabaseConfigured) {
+                    const response = await fetch("/api/account/export", { cache: "no-store" });
+                    const result = await response.json();
+                    if (!response.ok)
+                      throw new Error(result.error ?? "Não foi possível exportar seus dados.");
+                    payload = result;
+                  }
+                  const url = URL.createObjectURL(
+                    new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+                  );
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "meus-dados-voyra.json";
+                  a.click();
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  toast.success("Exportação preparada");
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Não foi possível exportar.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
               }}
             >
               <Download size={16} />

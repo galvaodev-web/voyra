@@ -13,7 +13,8 @@ For a new environment, apply the Travel base first, then the launch and marketpl
 3. `supabase/migrations/20260912_marketplace.sql`
 4. `supabase/migrations/20260915_price_engine.sql`
 5. `supabase/migrations/20260918_web_1_0.sql`
-6. Voyra Social migrations in filename order
+6. `supabase/migrations/20260921_mvp_closeout.sql`
+7. Voyra Social migrations in filename order
 
 Never disable RLS to fix integration errors.
 
@@ -63,6 +64,8 @@ Use `docs/STAGING.md` and the Social staging checklist before promotion. Account
 See `docs/BACKUP_RESTORE.md` and `PRODUCTION_CHECKLIST.md` before promotion.
 
 ## 7. Launch gate
+
+OpenAI, Mapbox e WeatherAPI são obrigatórios para o build público completo. O gate rejeita a implantação quando qualquer credencial estiver ausente; todas permanecem server-side.
 
 Populate `.env.local`/host secrets and run:
 

@@ -17,33 +17,19 @@ const schema = z.object({
   date: z.string().min(1, "Escolha a data"),
   time: z.string().min(1, "Informe o horário"),
   reference: z.string().trim().min(2, "Informe a referência ou observação"),
+  company: z.string().trim().max(120).optional(),
+  amount: z.number().min(0, "Use um valor positivo").optional(),
+  currency: z.enum(["BRL", "EUR", "USD"]),
+  externalLink: z
+    .union([
+      z.literal(""),
+      z
+        .url("Informe um link válido")
+        .refine((value) => value.startsWith("https://"), "Use um link HTTPS"),
+    ])
+    .optional(),
 });
 type Values = z.infer<typeof schema>;
-export function DemoQR() {
-  return (
-    <svg className="qr" viewBox="0 0 29 29" role="img" aria-label="QR Code fictício, sem validade">
-      <rect width="29" height="29" fill="white" />
-      {[
-        [1, 1],
-        [21, 1],
-        [1, 21],
-      ].map(([x, y]) => (
-        <g key={`${x}-${y}`}>
-          <rect x={x} y={y} width="7" height="7" fill="currentColor" />
-          <rect x={x + 1} y={y + 1} width="5" height="5" fill="white" />
-          <rect x={x + 2} y={y + 2} width="3" height="3" fill="currentColor" />
-        </g>
-      ))}
-      {Array.from({ length: 100 }, (_, i) => {
-        const x = 9 + ((i * 7) % 19);
-        const y = 9 + ((i * 11) % 19);
-        return i % 3 !== 0 ? (
-          <rect key={i} x={x} y={y} width={i % 2 ? 1 : 2} height="1" fill="currentColor" />
-        ) : null;
-      })}
-    </svg>
-  );
-}
 export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookingsOnly?: boolean }) {
   const { saveTrip } = useVoyra();
   const [tab, setTab] = useState("Todos");
@@ -55,7 +41,10 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
   const docs = trip.documents.filter(
     (d) =>
       (tab === "Todos" || d.type === tab) &&
-      (!bookingsOnly || ["Voo", "Hotel", "Trem", "Reserva"].includes(d.type)),
+      (!bookingsOnly ||
+        ["Voo", "Hotel", "Trem", "Ingresso", "Seguro", "Restaurante", "Reserva", "Outro"].includes(
+          d.type,
+        )),
   );
   async function openFile(doc: TravelDocument) {
     if (!doc.file) return;
@@ -139,8 +128,7 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
       <div className="notice" style={{ marginTop: 24 }}>
         <Ticket size={19} />
         <span>
-          Os QR Codes de exemplo são fictícios. Para embarcar ou entrar em atrações, abra o arquivo
-          original do seu ingresso.
+          Para embarcar ou entrar em atrações, use sempre o arquivo original do documento.
         </span>
       </div>
       <Modal open={open} onClose={() => setOpen(false)} title="Adicionar ao Voyra Pass">
@@ -179,14 +167,21 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
         {selected && (
           <div className="stack">
             <Badge>{selected.type}</Badge>
-            <div className="row between">
-              <div>
-                <h3>{selected.reference}</h3>
-                <p style={{ marginTop: 12 }}>
-                  {dateLabel(selected.date)} de {selected.date.slice(0, 4)} · {selected.time}
-                </p>
-              </div>
-              <DemoQR />
+            {selected.company && <p>Empresa: {selected.company}</p>}
+            {selected.amount !== undefined && (
+              <p>
+                Valor:{" "}
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: selected.currency ?? "BRL",
+                }).format(selected.amount)}
+              </p>
+            )}
+            <div>
+              <h3>{selected.reference}</h3>
+              <p style={{ marginTop: 12 }}>
+                {dateLabel(selected.date)} de {selected.date.slice(0, 4)} · {selected.time}
+              </p>
             </div>
             {selected.file ? (
               <Button loading={busy} onClick={() => void openFile(selected)}>
@@ -195,9 +190,18 @@ export function Documents({ trip, bookingsOnly = false }: { trip: Trip; bookings
               </Button>
             ) : (
               <div className="notice warning">
-                Este cartão contém apenas os dados cadastrados. Nenhum arquivo original foi anexado;
-                o QR Code não tem validade.
+                Este cartão contém apenas os dados cadastrados. Nenhum arquivo original foi anexado.
               </div>
+            )}
+            {selected.externalLink && (
+              <a
+                className="button button-secondary"
+                href={selected.externalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Abrir link da reserva <ArrowUpRight size={14} />
+              </a>
             )}
           </div>
         )}
@@ -259,6 +263,7 @@ export function DocumentCard({
       </div>
       <h3>{doc.name}</h3>
       <p>{doc.reference}</p>
+      {doc.company && <p>{doc.company}</p>}
       <div className="document-details">
         <span>
           <small>DATA</small>
@@ -271,13 +276,10 @@ export function DocumentCard({
           <strong>{doc.time}</strong>
         </span>
       </div>
-      <div className="row">
-        <DemoQR />
-        <Button variant="secondary" onClick={onOpen}>
-          Abrir documento
-          <ArrowUpRight size={14} />
-        </Button>
-      </div>
+      <Button variant="secondary" onClick={onOpen}>
+        Abrir documento
+        <ArrowUpRight size={14} />
+      </Button>
     </Card>
   );
 }
@@ -297,7 +299,16 @@ function DocumentForm({
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", type: defaultType, date: trip.start, time: "10:00", reference: "" },
+    defaultValues: {
+      name: "",
+      type: defaultType,
+      date: trip.start,
+      time: "10:00",
+      reference: "",
+      company: "",
+      currency: "BRL",
+      externalLink: "",
+    },
   });
   return (
     <form className="form-grid" onSubmit={handleSubmit((values) => onSave(values, file))}>
@@ -305,7 +316,17 @@ function DocumentForm({
         <Input label="Nome do documento" {...register("name")} error={errors.name?.message} />
       </div>
       <Select label="Tipo" {...register("type")}>
-        {["Voo", "Hotel", "Ingresso", "Trem", "Seguro", "Reserva", "Pessoal"].map((t) => (
+        {[
+          "Voo",
+          "Hotel",
+          "Ingresso",
+          "Trem",
+          "Seguro",
+          "Restaurante",
+          "Reserva",
+          "Outro",
+          "Pessoal",
+        ].map((t) => (
           <option key={t}>{t}</option>
         ))}
       </Select>
@@ -315,6 +336,34 @@ function DocumentForm({
         label="Referência ou observação"
         {...register("reference")}
         error={errors.reference?.message}
+      />
+      <Input label="Empresa (opcional)" {...register("company")} error={errors.company?.message} />
+      <Input
+        label="Valor (opcional)"
+        type="number"
+        min="0"
+        step="0.01"
+        {...register("amount", {
+          setValueAs: (value) => (value === "" ? undefined : Number(value)),
+        })}
+        error={errors.amount?.message}
+      />
+      <div>
+        <Select label="Moeda" {...register("currency")}>
+          <option value="BRL">BRL</option>
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+        </Select>
+        {errors.currency?.message && (
+          <small className="field-error">{errors.currency.message}</small>
+        )}
+      </div>
+      <Input
+        label="Link externo (opcional)"
+        type="url"
+        placeholder="https://"
+        {...register("externalLink")}
+        error={errors.externalLink?.message}
       />
       <label className="upload-zone full">
         <UploadCloud size={26} style={{ margin: "0 auto 8px" }} />

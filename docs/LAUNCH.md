@@ -1,6 +1,6 @@
 # Preparar o lançamento do Voyra
 
-O código está preparado para configurar contas, assinaturas e publicação. Sem os serviços abaixo, a aplicação continua uma demonstração. Um build aprovado não comprova entrega de e-mails, cobrança, OAuth, políticas jurídicas ou funcionamento dos serviços hospedados.
+O código está preparado para contas, providers, assinaturas e publicação reais. O build do GitHub Pages é a única demonstração. Um build aprovado não comprova entrega de e-mails, cobrança, OAuth, políticas jurídicas ou funcionamento dos serviços hospedados.
 
 ## 1. Supabase e contas
 
@@ -8,7 +8,7 @@ Para abrir inicialmente com contas Free, defina `NEXT_PUBLIC_BILLING_ENABLED=fal
 
 Login por e-mail é o fluxo inicial. Só defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` depois de configurar e validar o provedor Google. As duas opções são incorporadas no build e exigem novo deploy quando alteradas.
 
-1. Em um projeto novo, execute `supabase/schema.sql` e depois, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql` e `20260915_price_engine.sql`. Em projeto existente, execute somente as migrations ainda não aplicadas. Faça backup antes de migrar dados existentes.
+1. Em um projeto novo, execute `supabase/schema.sql` e depois, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql`, `20260915_price_engine.sql`, `20260918_web_1_0.sql` e `20260921_mvp_closeout.sql`. Em projeto existente, execute somente as migrations ainda não aplicadas. Faça backup antes de migrar dados existentes.
 2. Configure URL e chave pública, e `SUPABASE_SERVICE_ROLE_KEY` exclusivamente no servidor. Use `.env.example` como referência; nunca publique `.env.local`.
 3. Ative confirmação de e-mail e configure SMTP do seu domínio. Configure limites de autenticação e proteção contra cadastro abusivo no provedor conforme sua operação.
 4. Configure Site URL e redirects exatos para `https://SEU-DOMINIO/auth/callback`. Cadastros e recuperação usam PKCE; teste abrindo o link no mesmo navegador que iniciou o fluxo. Se oferecer Google, configure seu OAuth e o redirect correspondente no Supabase.
@@ -85,7 +85,7 @@ A verificação local de lançamento exige HTTPS e, quando novas assinaturas est
 4. Envie um documento, abra, remova e execute a limpeza. Verifique fila e bucket. Teste exclusão da conta com e sem assinatura, inclusive repetindo após uma falha induzida em homologação.
 5. Confirme preços finais, portal, suporte, políticas e domínio. Faça a verificação remota com as credenciais live e só então abra ao público.
 
-## Escopo que continua demonstrativo
+## Integrações externas e limites
 
 ### Hospedagens Booking.com — links de afiliado opcionais
 
@@ -103,4 +103,8 @@ Para pesquisar hospedagens dentro do Voyra, a [Demand API](https://developers.bo
 
 ### Outras integrações
 
-Voyra AI, previsão de clima, mapa ilustrativo, câmbio fixo e tradutor de frases não se tornam integrações ao preencher as chaves opcionais. Não há reserva de voos/hotéis, colaboração entre contas, push, offline real ou marketplace financeiro. Esses recursos continuam identificados na interface e não compõem a promessa dos planos pagos. Integrações adicionais exigem outro ciclo de implementação e homologação.
+Voyra AI usa `/api/ai` e tradução livre usa `/api/translate`. Ambas exigem `OPENAI_API_KEY`/`OPENAI_MODEL` no servidor, autenticação e rate limit. A IA envia apenas contexto limitado de uma viagem pertencente ao usuário; documentos, reservas, gastos, participantes, diário e perfil não são enviados. A chamada usa `store: false`, sujeito aos controles e à política de retenção da conta OpenAI. Sem chave, a interface informa indisponibilidade.
+
+Clima usa `/api/weather` e `WEATHER_API_KEY` server-side para consultar WeatherAPI. A resposta exibe provider e horário da observação. Sem chave ou em falha do provider, nenhuma previsão fictícia é exibida no runtime Next.js. Homologue limites, custos e retenção dos dois providers antes de ativá-los.
+
+Mapa usa `/api/maps`, Mapbox Search Box e Static Images com token server-side, autenticação e validação de propriedade. Tradução livre usa OpenAI; frases essenciais ficam disponíveis offline. O câmbio consulta Frankfurter e marca fallback offline explicitamente. Não há reserva direta de voos/hotéis, colaboração entre contas, push, rastreamento GPS, offline completo ou marketplace financeiro.

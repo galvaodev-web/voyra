@@ -105,39 +105,52 @@ export function Expenses({ trip }: { trip: Trip }) {
         <ExpenseForm
           trip={trip}
           onSave={async (values) => {
-            let conversion: Pick<Expense, "baseAmount" | "exchangeRate" | "exchangeRateSource" | "exchangeRateObservedAt"> = {
-              baseAmount: values.amount,
-              exchangeRate: 1,
-              exchangeRateSource: "FRANKFURTER",
-              exchangeRateObservedAt: new Date().toISOString(),
-            };
-            if (values.currency !== "BRL") {
-              const response = await fetch(`/api/exchange-rate?base=${values.currency}&quote=BRL`);
-              const rate = (await response.json()) as {
-                rate?: number;
-                source?: "FRANKFURTER" | "FALLBACK";
-                observedAt?: string | null;
-                error?: string;
+            try {
+              let conversion: Pick<
+                Expense,
+                "baseAmount" | "exchangeRate" | "exchangeRateSource" | "exchangeRateObservedAt"
+              > = {
+                baseAmount: values.amount,
+                exchangeRate: 1,
+                exchangeRateSource: "FRANKFURTER",
+                exchangeRateObservedAt: new Date().toISOString(),
               };
-              if (!response.ok || !rate.rate)
-                throw new Error(rate.error || "Não foi possível obter a cotação.");
-              conversion = {
-                baseAmount: values.amount * rate.rate,
-                exchangeRate: rate.rate,
-                exchangeRateSource: rate.source,
-                exchangeRateObservedAt: rate.observedAt ?? null,
-              };
-              if (rate.source === "FALLBACK")
-                toast.warning("Cotação ao vivo indisponível. O gasto foi salvo com referência offline identificada.");
-            }
-            if (
-              await saveTrip({
-                ...trip,
-                expenses: [...trip.expenses, { ...values, ...conversion, id: uid() }],
-              })
-            ) {
-              toast.success("Gasto adicionado");
-              setOpen(false);
+              if (values.currency !== "BRL") {
+                const response = await fetch(
+                  `/api/exchange-rate?base=${values.currency}&quote=BRL`,
+                );
+                const rate = (await response.json()) as {
+                  rate?: number;
+                  source?: "FRANKFURTER" | "FALLBACK";
+                  observedAt?: string | null;
+                  error?: string;
+                };
+                if (!response.ok || !rate.rate)
+                  throw new Error(rate.error || "Não foi possível obter a cotação.");
+                conversion = {
+                  baseAmount: values.amount * rate.rate,
+                  exchangeRate: rate.rate,
+                  exchangeRateSource: rate.source,
+                  exchangeRateObservedAt: rate.observedAt ?? null,
+                };
+                if (rate.source === "FALLBACK")
+                  toast.warning(
+                    "Cotação ao vivo indisponível. O gasto foi salvo com referência offline identificada.",
+                  );
+              }
+              if (
+                await saveTrip({
+                  ...trip,
+                  expenses: [...trip.expenses, { ...values, ...conversion, id: uid() }],
+                })
+              ) {
+                toast.success("Gasto adicionado");
+                setOpen(false);
+              }
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Não foi possível salvar o gasto.",
+              );
             }
           }}
         />
@@ -178,7 +191,8 @@ export function ExpenseCard({ expense: e, onDelete }: { expense: Expense; onDele
       <div>
         <strong>{e.description}</strong>
         <p>
-          {e.category} · {dateLabel(e.date)} · {e.paidBy} · {e.status === "ACTUAL" ? "Realizado" : "Planejado"}
+          {e.category} · {dateLabel(e.date)} · {e.paidBy} ·{" "}
+          {e.status === "ACTUAL" ? "Realizado" : "Planejado"}
         </p>
       </div>
       <div className="expense-amount">

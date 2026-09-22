@@ -33,6 +33,10 @@ export async function GET() {
           process.env.RESEND_API_KEY && process.env.ALERT_EMAIL_FROM
             ? "configured"
             : "unconfigured",
+        marketplace: process.env.SKYSCANNER_MEDIA_PARTNER_ID ? "configured" : "unconfigured",
+        ai: process.env.OPENAI_API_KEY ? "configured" : "unconfigured",
+        maps: process.env.MAPBOX_ACCESS_TOKEN ? "configured" : "unconfigured",
+        weather: process.env.WEATHER_API_KEY ? "configured" : "unconfigured",
         errorTracking: process.env.SENTRY_DSN ? "configured" : "unconfigured",
       },
     },

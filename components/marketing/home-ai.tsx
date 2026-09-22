@@ -5,17 +5,8 @@ import { useState } from "react";
 import { ArrowRight, ArrowUpRight, Check, Play, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui";
 import { photos } from "@/data/mock-data";
-import { travelAI } from "@/lib/ai";
 export function HomeAI() {
-  const [prompt, setPrompt] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [thinking, setThinking] = useState(false);
   const [showTour, setShowTour] = useState(false);
-  async function askAI() {
-    setThinking(true);
-    setAnswer(await travelAI.reply(prompt));
-    setThinking(false);
-  }
   return (
     <>
       <section className="container ai-section">
@@ -54,7 +45,7 @@ export function HomeAI() {
               </span>
               <strong>Voyra AI</strong>
             </span>
-            <span className="badge">Demonstração</span>
+            <span className="badge">Exemplo de sugestão</span>
           </div>
           <div className="chat-bubble user-bubble">
             Quero viajar 8 dias para a Itália, gosto de história e gastronomia e tenho R$ 8.000. 🇮🇹
@@ -77,33 +68,9 @@ export function HomeAI() {
               </div>
             </div>
           </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void askAI();
-            }}
-            className="ai-prompt"
-          >
-            <input
-              aria-label="Conte sua ideia à Voyra AI"
-              placeholder="Qual é a viagem dos seus sonhos?"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              required
-            />
-            <button aria-label="Criar roteiro com IA" disabled={thinking}>
-              <ArrowUpRight size={20} />
-            </button>
-          </form>
-          {answer && (
-            <p className="ai-answer" role="status">
-              {answer}
-              <Link href="/planejar" className="text-link">
-                Criar minha viagem <ArrowRight size={15} />
-              </Link>
-            </p>
-          )}
-          {thinking && <p role="status">Pensando na sua próxima viagem…</p>}
+          <Link href="/planejar" className="button button-primary">
+            Criar uma viagem <ArrowUpRight size={20} />
+          </Link>
         </div>
       </section>{" "}
       <Modal
@@ -116,12 +83,12 @@ export function HomeAI() {
             <Play />
           </span>
           <p>
-            A Voyra AI usa os dados da sua viagem para demonstrar sugestões de roteiro, economia e
-            alternativas para dias de chuva.
+            A Voyra AI usa somente destino, datas, orçamento, estilos e atividades da viagem para
+            sugerir roteiro, economia e alternativas para dias de chuva.
           </p>
           <p>
-            Nesta versão, as respostas são simuladas. Nenhuma reserva é feita e seu roteiro só muda
-            quando você o edita.
+            As respostas são geradas pelo provider configurado. Nenhuma reserva é feita e seu
+            roteiro só muda quando você o edita.
           </p>
           <Link href="/planejar" className="button button-primary">
             Criar roteiro com IA <Sparkles size={17} />

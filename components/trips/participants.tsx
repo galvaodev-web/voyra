@@ -12,7 +12,10 @@ export function Participants({ trip }: { trip: Trip }) {
   const [busy, setBusy] = useState(false);
   const hotel = trip.expenses.find((e) => e.category === "Hospedagem");
   const memberCount = trip.members.length;
-  const total = trip.expenses.reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
+  const total = trip.expenses.reduce(
+    (n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate),
+    0,
+  );
   const share = memberCount ? total / memberCount : 0;
   return (
     <>
@@ -56,7 +59,8 @@ export function Participants({ trip }: { trip: Trip }) {
             {hotel ? (
               <>
                 <p style={{ margin: "15px 0", fontSize: 12 }}>
-                  {hotel.description} · {money(expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate))}
+                  {hotel.description} ·{" "}
+                  {money(expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate))}
                   <br />
                   Pago por {hotel.paidBy}. Dividido igualmente entre {memberCount} pessoas.
                 </p>
@@ -68,7 +72,10 @@ export function Participants({ trip }: { trip: Trip }) {
                         {m.name} deve a {hotel.paidBy}
                       </span>
                       <strong>
-                        {money(expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate) / memberCount)}
+                        {money(
+                          expenseBRL(hotel.amount, hotel.currency, hotel.exchangeRate) /
+                            memberCount,
+                        )}
                       </strong>
                     </div>
                   ))}
@@ -82,7 +89,8 @@ export function Participants({ trip }: { trip: Trip }) {
           <Card>
             <h3>Balanço de todas as despesas</h3>
             <p className="small-text" style={{ marginTop: 12 }}>
-              Parte igual por pessoa: {money(share)}. Valores convertidos com câmbio demonstrativo.
+              Parte igual por pessoa: {money(share)}. Valores em outra moeda usam a cotação
+              registrada no gasto, identificada como ao vivo ou referência offline.
             </p>
             {trip.members.map((m) => {
               const paid = trip.expenses

@@ -45,6 +45,13 @@ const contextSchema = z.object({
 });
 const requestSchema = z.intersection(schema, contextSchema);
 
+export async function GET() {
+  return Response.json(
+    { available: Boolean(process.env.SKYSCANNER_MEDIA_PARTNER_ID?.trim()) },
+    { headers: { "Cache-Control": "private, max-age=300" } },
+  );
+}
+
 function validDate(value: string) {
   const parsed = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;

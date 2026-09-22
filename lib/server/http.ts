@@ -1,4 +1,5 @@
 import "server-only";
+import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 export class HttpError extends Error {
@@ -64,6 +65,8 @@ export async function jsonBody(request: Request, limit = 8192): Promise<unknown>
 export function apiError(error: unknown) {
   if (error instanceof HttpError)
     return Response.json({ error: error.message }, { status: error.status });
+  if (error instanceof ZodError)
+    return Response.json({ error: "Dados inválidos." }, { status: 400 });
   // Never include tokens, payment payloads or private trip data in responses/logs.
   console.error("Voyra API operation failed", error instanceof Error ? error.name : "UnknownError");
   return Response.json({ error: "Não foi possível concluir. Tente novamente." }, { status: 500 });

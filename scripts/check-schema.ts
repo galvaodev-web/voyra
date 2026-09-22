@@ -28,6 +28,7 @@ async function main() {
   await db.exec(await readFile("supabase/migrations/20260912_marketplace.sql", "utf8"));
   await db.exec(await readFile("supabase/migrations/20260915_price_engine.sql", "utf8"));
   await db.exec(await readFile("supabase/migrations/20260918_web_1_0.sql", "utf8"));
+  await db.exec(await readFile("supabase/migrations/20260921_mvp_closeout.sql", "utf8"));
   const alice = "11111111-1111-4111-8111-111111111111";
   const bob = "22222222-2222-4222-8222-222222222222";
   const trip = "33333333-3333-4333-8333-333333333333";
@@ -238,7 +239,10 @@ async function main() {
     1,
   );
   await db.exec("set role authenticated");
-  await assert.rejects(db.query("select * from public.process_due_price_alerts(10)"), /permission denied/);
+  await assert.rejects(
+    db.query("select * from public.process_due_price_alerts(10)"),
+    /permission denied/,
+  );
   await db.exec("reset role");
   await db.query(
     "insert into public.billing_customers(user_id,customer_id) values($1,'cus_alice')",
@@ -290,6 +294,11 @@ async function main() {
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [bob]);
   assert.equal((await db.query("select * from public.subscriptions")).rows.length, 0);
   await db.query("select public.unpublish_trip($1)", [trip]);
+  assert.equal(
+    (await db.query("select id from public.published_routes where id=$1", [routeId])).rows.length,
+    1,
+    "Owners can export a withdrawn route snapshot",
+  );
   await db.exec("set role anon");
   await db.exec("select set_config('request.jwt.claim.sub','',false)");
   const publicRows = await db.query<{ activities: unknown }>(

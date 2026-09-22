@@ -3,7 +3,7 @@
 ## Database
 
 - [ ] Take a PostgreSQL backup and record the migration version.
-- [ ] Apply Travel migrations through `20260918_web_1_0.sql`, then all Social migrations.
+- [ ] Apply Travel migrations through `20260921_mvp_closeout.sql`, then all Social migrations.
 - [ ] Run `npm run test:db` and the Social RLS suite against the release commit.
 - [ ] Verify RLS remains enabled and `service_role` is server-only.
 
@@ -20,6 +20,7 @@
 - [ ] Keep `travel-documents`, `social-images`, `social-videos` and `avatars` private.
 - [ ] Confirm MIME and size limits and test signed URL expiry.
 - [ ] Run storage and account cleanup crons with `CRON_SECRET`.
+- [ ] Upload valid PDF/JPEG/PNG/WebP files and reject mismatched extension/signature samples.
 
 ## Stripe
 
@@ -44,6 +45,7 @@
 - [ ] Publish reviewed Terms, Privacy, support contact and legal entity details.
 - [ ] Configure `SENTRY_DSN` and optional consent-gated PostHog.
 - [ ] Monitor `/api/health`, cron failures, Stripe webhooks and deletion jobs.
+- [ ] Configure and validate OpenAI, Mapbox and WeatherAPI; confirm provider attribution and failure states.
 
 ## Backups And Staging
 
@@ -59,3 +61,5 @@
 - [ ] Complete eligible trip -> Tokens -> Passport -> Recap -> Social share.
 - [ ] Import a public route as another user without private creator data.
 - [ ] Export and delete a disposable account; verify Storage and Auth cleanup.
+- [ ] Confirm the account export contains trips, Tokens, publications, searches, alerts and subscription metadata.
+- [ ] Validate AI, free-text translation, Mapbox geocoding/static image and WeatherAPI with production-domain sessions.

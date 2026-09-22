@@ -1,9 +1,8 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import {
   Languages,
-  Mic,
-  Camera,
   MessageCircle,
   Phone,
   Hospital,
@@ -13,9 +12,11 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge, Button, Card, Input, Select, Tabs } from "@/components/ui";
+import { Badge, Button, Card, Input, Select } from "@/components/ui";
+import { useVoyra } from "@/hooks/use-voyra";
 import type { Trip } from "@/types";
 import { navigationUrl } from "@/lib/maps";
+
 const phrases: Record<string, Record<string, string>> = {
   Italiano: {
     "Onde fica o banheiro?": "Dove si trova il bagno?",
@@ -39,79 +40,137 @@ const phrases: Record<string, Record<string, string>> = {
     "A conta, por favor": "La cuenta, por favor",
   },
 };
+
+const languages = [
+  "Português",
+  "Inglês",
+  "Espanhol",
+  "Italiano",
+  "Francês",
+  "Alemão",
+  "Japonês",
+  "Coreano",
+  "Mandarim",
+];
+
 export function Translator() {
-  const [language, setLanguage] = useState("Italiano");
+  const [sourceLanguage, setSourceLanguage] = useState("Português");
+  const [targetLanguage, setTargetLanguage] = useState("Italiano");
   const [text, setText] = useState("Onde fica o banheiro?");
   const [result, setResult] = useState("Dove si trova il bagno?");
-  const [tab, setTab] = useState("Texto");
-  function translate(value = text) {
-    const key = Object.keys(phrases[language]).find(
-      (k) => k.toLowerCase() === value.trim().toLowerCase(),
+  const [available, setAvailable] = useState(false);
+  const [checking, setChecking] = useState(process.env.NEXT_PUBLIC_STATIC_DEMO !== "true");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (process.env.NEXT_PUBLIC_STATIC_DEMO === "true") return;
+    void fetch("/api/translate", { cache: "no-store" })
+      .then(async (response) => (await response.json()) as { available?: boolean })
+      .then((payload) => {
+        if (active) setAvailable(payload.available === true);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function offlineTranslation(value: string) {
+    if (sourceLanguage !== "Português" || !phrases[targetLanguage]) return null;
+    const key = Object.keys(phrases[targetLanguage]).find(
+      (phrase) => phrase.toLowerCase() === value.trim().toLowerCase(),
     );
-    setResult(
-      key
-        ? phrases[language][key]
-        : "Esta frase ainda não está na demonstração. Escolha uma das frases rápidas abaixo.",
-    );
+    return key ? phrases[targetLanguage][key] : null;
   }
+
+  async function translate(value = text) {
+    const offline = offlineTranslation(value);
+    if (offline) {
+      setResult(offline);
+      return;
+    }
+    if (!available) {
+      toast.error("A tradução livre não está disponível neste ambiente.");
+      return;
+    }
+    setBusy(true);
+    setResult("");
+    try {
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: value, sourceLanguage, targetLanguage }),
+      });
+      const payload = (await response.json()) as { translation?: string; error?: string };
+      if (!response.ok || !payload.translation)
+        throw new Error(payload.error || "Não foi possível traduzir agora.");
+      setResult(payload.translation);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível traduzir agora.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <div className="page-title">
         <div>
           <span className="eyebrow">BOAS CONVERSAS, EM QUALQUER LUGAR</span>
           <h1>Tradutor Voyra</h1>
-          <p>Pequenas frases para grandes encontros.</p>
+          <p>Tradução livre quando o provider está conectado e frases essenciais offline.</p>
         </div>
-        <Badge>Simulado</Badge>
+        <Badge className="neutral">
+          {checking ? "Verificando" : available ? "OpenAI" : "Frases offline"}
+        </Badge>
       </div>
       <Card className="translator-card">
-        <Tabs
-          items={["Texto", "Voz", "Câmera", "Frases rápidas"]}
-          value={tab}
-          onChange={(v) => {
-            setTab(v);
-            if (v === "Voz" || v === "Câmera")
-              toast.info(`${v} é uma prévia. Use o texto ou as frases rápidas nesta versão.`);
-          }}
-        />
         <div className="form-grid">
-          <Select label="De">
-            <option>Português</option>
-          </Select>
           <Select
-            label="Para"
-            value={language}
-            onChange={(e) => {
-              setLanguage(e.target.value);
+            label="De"
+            value={sourceLanguage}
+            onChange={(event) => {
+              setSourceLanguage(event.target.value);
               setResult("");
             }}
           >
-            {Object.keys(phrases).map((l) => (
-              <option key={l}>{l}</option>
+            {languages.map((language) => (
+              <option key={language}>{language}</option>
+            ))}
+          </Select>
+          <Select
+            label="Para"
+            value={targetLanguage}
+            onChange={(event) => {
+              setTargetLanguage(event.target.value);
+              setResult("");
+            }}
+          >
+            {languages.map((language) => (
+              <option key={language}>{language}</option>
             ))}
           </Select>
         </div>
-        {(tab === "Voz" || tab === "Câmera") && (
-          <div className="notice" style={{ marginTop: 20 }}>
-            {tab === "Voz" ? <Mic size={20} /> : <Camera size={20} />}A captura por{" "}
-            {tab.toLowerCase()} estará disponível em uma próxima versão.
-          </div>
-        )}
         <form
           className="stack"
           style={{ marginTop: 22 }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            translate();
+          onSubmit={(event) => {
+            event.preventDefault();
+            void translate();
           }}
         >
           <Input
             label="O que você quer dizer?"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(event) => setText(event.target.value)}
+            maxLength={1500}
             required
           />
-          <Button type="submit">
+          <Button type="submit" loading={busy}>
             <Languages size={17} />
             Traduzir frase
           </Button>
@@ -121,27 +180,33 @@ export function Translator() {
             {result}
           </div>
         )}
-        <span className="eyebrow">
-          <MessageCircle size={14} />
-          FRASES RÁPIDAS
-        </span>
-        <div className="style-options">
-          {Object.keys(phrases[language]).map((p) => (
-            <button
-              onClick={() => {
-                setText(p);
-                translate(p);
-              }}
-              key={p}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        {sourceLanguage === "Português" && phrases[targetLanguage] && (
+          <>
+            <span className="eyebrow">
+              <MessageCircle size={14} />
+              FRASES OFFLINE
+            </span>
+            <div className="style-options">
+              {Object.keys(phrases[targetLanguage]).map((phrase) => (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText(phrase);
+                    void translate(phrase);
+                  }}
+                  key={phrase}
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </Card>
     </>
   );
 }
+
 export function Emergency({ trip }: { trip: Trip }) {
   const italy = trip.country === "Itália";
   return (
@@ -176,7 +241,7 @@ export function Emergency({ trip }: { trip: Trip }) {
             </a>
           ) : (
             <a
-              href={`https://www.gov.br/mre/pt-br/assuntos/portal-consular`}
+              href="https://www.gov.br/mre/pt-br/assuntos/portal-consular"
               target="_blank"
               rel="noreferrer"
               className="button button-secondary"
@@ -229,21 +294,17 @@ export function Emergency({ trip }: { trip: Trip }) {
             Abrir Voyra Pass
           </a>
         </div>
-        <EmergencyContact tripId={trip.id} />
+        <EmergencyContact trip={trip} />
       </div>
     </>
   );
 }
-function EmergencyContact({ tripId }: { tripId: string }) {
-  const [editing, setEditing] = useState(false);
-  const [contact, setContact] = useState<{ name: string; phone: string } | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      return JSON.parse(localStorage.getItem(`voyra-contact-${tripId}`) ?? "null");
-    } catch {
-      return null;
-    }
-  });
+
+function EmergencyContact({ trip }: { trip: Trip }) {
+  const { saveTrip } = useVoyra();
+  const [editing, setEditing] = useState(!trip.emergencyContact);
+  const [busy, setBusy] = useState(false);
+  const contact = trip.emergencyContact;
   return (
     <div className="emergency-card">
       <UserRound size={25} />
@@ -266,18 +327,16 @@ function EmergencyContact({ tripId }: { tripId: string }) {
       ) : (
         <form
           className="stack"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            const next = { name: String(f.get("name")), phone: String(f.get("phone")) };
-            try {
-              localStorage.setItem(`voyra-contact-${tripId}`, JSON.stringify(next));
-              setContact(next);
+          onSubmit={async (event) => {
+            event.preventDefault();
+            const form = new FormData(event.currentTarget);
+            const next = { name: String(form.get("name")), phone: String(form.get("phone")) };
+            setBusy(true);
+            if (await saveTrip({ ...trip, emergencyContact: next })) {
               setEditing(false);
-              toast.success("Contato salvo neste dispositivo");
-            } catch {
-              toast.error("Não foi possível salvar neste navegador.");
+              toast.success("Contato salvo na viagem");
             }
+            setBusy(false);
           }}
         >
           <Input label="Nome" name="name" defaultValue={contact?.name} required />
@@ -290,7 +349,9 @@ function EmergencyContact({ tripId }: { tripId: string }) {
             placeholder="+55 61 99999-9999"
             required
           />
-          <Button type="submit">Salvar contato no dispositivo</Button>
+          <Button type="submit" loading={busy}>
+            Salvar contato
+          </Button>
         </form>
       )}
     </div>

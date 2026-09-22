@@ -1,20 +1,44 @@
 import type { Trip } from "@/types";
-export interface TravelAI {
-  reply: (message: string, trip?: Trip) => Promise<string>;
+
+type AIStatus = { available: boolean; mode: "live" | "demo" | "unavailable" };
+
+function demoReply(message: string, trip?: Trip) {
+  const city = trip?.destination ?? "seu destino";
+  const text = message.toLowerCase();
+  if (/chov|chuva|reorganiz|atras|tarde/.test(text))
+    return `Para seu dia em ${city}, a demonstração sugere priorizar uma atividade coberta e reservar tempo entre os compromissos. Nada foi alterado automaticamente.`;
+  if (/gast|barat|orçamento/.test(text))
+    return `Para economizar em ${city}, a demonstração sugere combinar passeios gratuitos com uma refeição em mercado local. Confira valores reais antes de reservar.`;
+  return `Esta é uma resposta demonstrativa para ${city}. Na aplicação hospedada, a Voyra AI só fica disponível quando o provider server-side está configurado.`;
 }
-export const travelAI: TravelAI = {
-  async reply(message, trip) {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    const city = trip?.destination ?? "Roma";
-    const text = message.toLowerCase();
-    if (/chov|chuva|reorganiz|atras|tarde/.test(text))
-      return `Para seu dia em ${city}, sugiro deixar a manhã mais leve e priorizar uma atividade coberta à tarde. Reserve 30 minutos entre os compromissos. Você pode editar os horários na aba Roteiro. Esta é uma sugestão demonstrativa; nada foi alterado automaticamente.`;
-    if (/gast|barat|orçamento/.test(text))
-      return `Para economizar em ${city}, combine passeios gratuitos com uma refeição em um mercado local. Seu orçamento cadastrado é de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(trip?.budget ?? 8000)}. Revise a aba Gastos antes de reservar. Valores e recomendações desta conversa são simulados.`;
-    if (/comer|restaurante|gastronom/.test(text))
-      return `Uma pausa gastronômica pode encaixar bem entre duas atividades em ${city}. No roteiro de exemplo de Roma, o bairro Monti fica perto do Coliseu. Confirme horário, preço e distância antes de sair; não tenho acesso a locais em tempo real.`;
-    if (/hora|livre/.test(text))
-      return `Com duas horas livres em ${city}, escolha uma caminhada curta, uma pausa para café e tempo para voltar com calma. Consulte os locais do seu roteiro no mapa ilustrativo e confirme a rota em um aplicativo de navegação.`;
-    return `Vamos pensar na sua viagem${trip ? ` ${trip.name}` : ""}! Sugestão: comece com história pela manhã, reserve tempo para um almoço sem pressa e termine com um passeio ao ar livre. Posso sugerir alternativas para chuva, economia ou tempo livre. Sou a demonstração da Voyra AI, sem conexão com serviços externos.`;
+
+async function responseError(response: Response) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  return body?.error ?? "A Voyra AI está indisponível no momento.";
+}
+
+export const travelAI = {
+  async status(): Promise<AIStatus> {
+    if (process.env.NEXT_PUBLIC_STATIC_DEMO === "true") return { available: true, mode: "demo" };
+    try {
+      const response = await fetch("/api/ai", { cache: "no-store" });
+      if (!response.ok) return { available: false, mode: "unavailable" };
+      return (await response.json()) as AIStatus;
+    } catch {
+      return { available: false, mode: "unavailable" };
+    }
+  },
+  async reply(message: string, trip?: Trip): Promise<string> {
+    if (process.env.NEXT_PUBLIC_STATIC_DEMO === "true") return demoReply(message, trip);
+    if (!trip) throw new Error("Abra uma viagem para conversar com a Voyra AI.");
+    const response = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, tripId: trip.id }),
+    });
+    if (!response.ok) throw new Error(await responseError(response));
+    const body = (await response.json()) as { reply?: string };
+    if (!body.reply) throw new Error("A Voyra AI não retornou uma resposta.");
+    return body.reply;
   },
 };

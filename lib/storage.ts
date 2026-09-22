@@ -4,19 +4,17 @@ export async function saveFile(file: File, tripId: string): Promise<string> {
   if (!allowed.includes(file.type)) throw new Error("Use PDF, JPG, PNG ou WebP.");
   if (file.size > 3 * 1024 * 1024) throw new Error("O arquivo deve ter no máximo 3 MB.");
   if (isSupabaseConfigured) {
-    const client = createClient();
-    const {
-      data: { user },
-    } = await client.auth.getUser();
-    if (!user) throw new Error("Entre novamente para enviar o documento.");
-    const extension = file.type === "application/pdf" ? "pdf" : file.type.split("/")[1];
-    const path = `${user.id}/${tripId}/${crypto.randomUUID()}.${extension}`;
-    const { error } = await client.storage
-      .from("travel-documents")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (error)
-      throw new Error("Não foi possível enviar o arquivo. Confira a configuração do Storage.");
-    return path;
+    const form = new FormData();
+    form.set("tripId", tripId);
+    form.set("file", file);
+    const response = await fetch("/api/documents", { method: "POST", body: form });
+    const result = (await response.json().catch(() => null)) as {
+      path?: string;
+      error?: string;
+    } | null;
+    if (!response.ok || !result?.path)
+      throw new Error(result?.error ?? "Não foi possível enviar o arquivo.");
+    return result.path;
   }
   if (file.size > 800 * 1024)
     throw new Error(

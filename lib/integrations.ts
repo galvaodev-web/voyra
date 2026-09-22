@@ -5,24 +5,10 @@ export type IntegrationStatus = {
   serverOnly: boolean;
 };
 export const integrations: IntegrationStatus[] = [
-  { name: "openai", status: "mock", serverOnly: true },
-  { name: "mapbox", status: "mock", serverOnly: false },
+  { name: "openai", status: "implemented", serverOnly: true },
+  { name: "mapbox", status: "implemented", serverOnly: true },
   { name: "stripe", status: "implemented", serverOnly: true },
-  { name: "weather", status: "mock", serverOnly: true },
+  { name: "weather", status: "implemented", serverOnly: true },
   { name: "flights", status: "affiliate", serverOnly: true },
   { name: "bookings", status: "affiliate", serverOnly: true },
 ];
-export interface WeatherProvider {
-  forecast(city: string): Promise<{
-    city: string;
-    temperature: number;
-    condition: string;
-    tomorrowRain: boolean;
-    simulated: boolean;
-  }>;
-}
-export const weatherProvider: WeatherProvider = {
-  async forecast(city) {
-    return { city, temperature: 24, condition: "Céu limpo", tomorrowRain: true, simulated: true };
-  },
-};

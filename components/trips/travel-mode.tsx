@@ -1,86 +1,137 @@
 "use client";
+
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Clock,
-  Footprints,
-  Sun,
   Ticket,
   Navigation,
   CircleHelp,
   ArrowRight,
   Languages,
   ShieldPlus,
+  MapPin,
 } from "lucide-react";
 import { Badge, Button, Card, Modal } from "@/components/ui";
-import type { Trip } from "@/types";
+import { WeatherCard } from "@/components/trips/weather-card";
+import type { Activity, Trip } from "@/types";
 import { expenseBRL, money, tripDays } from "@/utils/format";
 import { travelAI } from "@/lib/ai";
+
+function localDate(now: Date) {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dayNumber(start: string, current: string) {
+  return (
+    Math.floor(
+      (new Date(`${current}T12:00:00`).getTime() - new Date(`${start}T12:00:00`).getTime()) /
+        86_400_000,
+    ) + 1
+  );
+}
+
+function nextActivities(trip: Trip, now: Date) {
+  const today = localDate(now);
+  const time = now.toTimeString().slice(0, 5);
+  const sorted = [...trip.activities].sort(
+    (a, b) => a.day - b.day || a.time.localeCompare(b.time) || (a.order ?? 0) - (b.order ?? 0),
+  );
+  if (today < trip.start) return sorted;
+  if (today > trip.end) return [];
+  const currentDay = dayNumber(trip.start, today);
+  return sorted.filter(
+    (activity) =>
+      activity.day > currentDay || (activity.day === currentDay && activity.time >= time),
+  );
+}
+
 export function TravelMode({ trip }: { trip: Trip }) {
   const [open, setOpen] = useState(false);
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
   const base = `/app/viagens/${trip.id}`;
-  const isExample = trip.id === "italia-2027";
-  const activity = isExample
-    ? trip.activities.find((a) => a.name === "Coliseu")
-    : [...trip.activities].sort((a, b) => a.day - b.day || a.time.localeCompare(b.time))[0];
-  const later = trip.activities.find(
-    (a) => activity && a.day === activity.day && a.time > activity.time,
-  );
-  const available =
-    trip.budget -
-    trip.expenses
-      .filter((expense) => expense.status === "ACTUAL")
-      .reduce((n, e) => n + expenseBRL(e.amount, e.currency, e.exchangeRate), 0);
+
+  useEffect(() => {
+    const update = () => setNow(new Date());
+    update();
+    const timer = window.setInterval(update, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const upcoming = useMemo(() => (now ? nextActivities(trip, now) : []), [now, trip]);
+  const activity: Activity | undefined = upcoming[0];
+  const later: Activity | undefined = upcoming[1];
+  const today = now ? localDate(now) : trip.start;
+  const phase =
+    today < trip.start ? "Viagem futura" : today > trip.end ? "Viagem concluída" : "Em viagem";
+  const spent = trip.expenses
+    .filter((expense) => expense.status === "ACTUAL")
+    .reduce(
+      (total, expense) =>
+        total + expenseBRL(expense.amount, expense.currency, expense.exchangeRate),
+      0,
+    );
+  const available = Math.max(0, trip.budget - spent);
+  const remainingDays =
+    today < trip.start
+      ? tripDays(trip.start, trip.end)
+      : today > trip.end
+        ? 1
+        : Math.max(1, tripDays(today, trip.end));
+
   async function help(question: string) {
     setBusy(true);
     setAnswer(await travelAI.reply(question, trip));
     setBusy(false);
   }
+
   return (
     <div className="trip-mode">
       <div className="row between">
         <h1 style={{ fontSize: 27 }}>{trip.name}</h1>
         <Badge>
           <span className="status-dot" style={{ background: "#006b67" }} />
-          Modo Viagem ativo
+          {phase}
         </Badge>
       </div>
       <p className="small-text muted" style={{ marginTop: 12 }}>
-        Prévia demonstrativa do seu dia · horários, distância e clima simulados.
+        Agenda salva na viagem · horário deste dispositivo.
       </p>
       <section className="mode-now">
         <div className="row between" style={{ marginTop: 0 }}>
           <div>
-            <span className="eyebrow">AGORA · PRÉVIA</span>
-            <div className="mode-clock">09:35</div>
+            <span className="eyebrow">AGORA</span>
+            <div className="mode-clock">
+              {now?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) ?? "--:--"}
+            </div>
           </div>
-          <div className="row" style={{ margin: 0 }}>
-            <Sun size={28} />
-            <span style={{ fontSize: 25 }}>24°C</span>
-          </div>
+          <Clock size={30} />
         </div>
-        <p style={{ fontSize: 11, marginTop: 26 }}>PRÓXIMO COMPROMISSO</p>
-        <h2>{activity?.name ?? "Um dia de possibilidades"}</h2>
+        <p style={{ fontSize: 11, marginTop: 26 }}>{activity ? "PRÓXIMO COMPROMISSO" : "AGENDA"}</p>
+        <h2>{activity?.name ?? "Nenhuma atividade futura"}</h2>
         <div className="row" style={{ fontSize: 12, marginTop: 12 }}>
-          <Clock size={15} />
-          {activity?.time ?? "Sem atividades"}
-          {isExample && (
+          {activity ? (
             <>
-              <Footprints size={15} style={{ marginLeft: 10 }} />
-              18 min de caminhada
+              <Clock size={15} /> Dia {activity.day} · {activity.time}
+              <MapPin size={15} style={{ marginLeft: 10 }} /> {activity.location}
             </>
+          ) : (
+            "Revise o roteiro para adicionar seu próximo compromisso."
           )}
         </div>
         <div className="row">
           <Link href={`${base}/documentos`} className="button button-secondary">
             <Ticket size={16} />
-            Abrir ingresso
+            Abrir documentos
           </Link>
           <Link href={`${base}/mapa`} className="button button-secondary">
             <Navigation size={16} />
-            Ver rota
+            Ver mapa
           </Link>
         </div>
       </section>
@@ -88,7 +139,9 @@ export function TravelMode({ trip }: { trip: Trip }) {
         <Card>
           <div className="row between">
             <div>
-              <span className="eyebrow">DEPOIS · {later.time}</span>
+              <span className="eyebrow">
+                DEPOIS · DIA {later.day} · {later.time}
+              </span>
               <h3>{later.name}</h3>
               <p className="small-text" style={{ marginTop: 7 }}>
                 {later.location}
@@ -106,18 +159,15 @@ export function TravelMode({ trip }: { trip: Trip }) {
       )}
       <Card className="mode-budget">
         <span>
-          Você pode gastar hoje
+          Média disponível por dia
           <br />
           <small className="muted">
-            {isExample
-              ? "Sugestão ilustrativa de orçamento diário"
-              : "Saldo dividido pelos dias da viagem"}
+            Saldo real dividido por {remainingDays} dia(s) restante(s)
           </small>
         </span>
-        <strong>
-          {isExample ? "€82" : money(Math.max(0, available) / tripDays(trip.start, trip.end))}
-        </strong>
+        <strong>{money(available / remainingDays)}</strong>
       </Card>
+      <WeatherCard city={trip.destination} tripId={trip.id} />
       <div className="quick-links">
         <Link href={`${base}/tradutor`}>
           <Languages />
@@ -145,9 +195,9 @@ export function TravelMode({ trip }: { trip: Trip }) {
             "Quero comer perto",
             "Preciso reorganizar meu dia",
             "Quero gastar menos",
-          ].map((q) => (
-            <button disabled={busy} key={q} onClick={() => void help(q)}>
-              {q}
+          ].map((question) => (
+            <button disabled={busy} key={question} onClick={() => void help(question)}>
+              {question}
             </button>
           ))}
           <Link href={`${base}/emergencia`} onClick={() => setOpen(false)}>

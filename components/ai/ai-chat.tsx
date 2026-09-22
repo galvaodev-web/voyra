@@ -7,6 +7,7 @@ export function AIChat({ trip }: { trip: Trip }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<"loading" | "live" | "demo" | "unavailable">("loading");
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([
     {
       role: "assistant",
@@ -17,18 +18,31 @@ export function AIChat({ trip }: { trip: Trip }) {
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [messages, busy]);
+  useEffect(() => {
+    let active = true;
+    void travelAI.status().then((result) => {
+      if (active) setStatus(result.mode);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   async function send(text: string) {
     if (!text.trim() || busy) return;
+    if (status !== "live" && status !== "demo") return;
     setInput("");
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy(true);
     try {
       const answer = await travelAI.reply(text, trip);
       setMessages((m) => [...m, { role: "assistant", text: answer }]);
-    } catch {
+    } catch (error) {
       setMessages((m) => [
         ...m,
-        { role: "assistant", text: "Não consegui responder agora. Tente novamente." },
+        {
+          role: "assistant",
+          text: error instanceof Error ? error.message : "Não consegui responder agora.",
+        },
       ]);
     } finally {
       setBusy(false);
@@ -54,7 +68,16 @@ export function AIChat({ trip }: { trip: Trip }) {
               </span>
               <span>
                 <strong>Sua companheira de viagem</strong>
-                <small>Voyra AI · respostas simuladas</small>
+                <small>
+                  Voyra AI ·{" "}
+                  {status === "live"
+                    ? "conectada"
+                    : status === "demo"
+                      ? "demonstração"
+                      : status === "loading"
+                        ? "verificando"
+                        : "indisponível"}
+                </small>
               </span>
             </span>
             <button className="icon-button" aria-label="Fechar chat" onClick={() => setOpen(false)}>
@@ -62,6 +85,9 @@ export function AIChat({ trip }: { trip: Trip }) {
             </button>
           </div>
           <div className="chat-messages" role="log" aria-live="polite">
+            {status === "unavailable" && (
+              <div className="notice warning">A Voyra AI não está configurada neste ambiente.</div>
+            )}
             {messages.map((m, i) => (
               <div key={i} className={`chat-bubble ${m.role === "user" ? "user" : ""}`}>
                 {m.text}
@@ -72,7 +98,11 @@ export function AIChat({ trip }: { trip: Trip }) {
           </div>
           <div className="chat-suggestions">
             {["Quero gastar menos hoje", "E se chover?", "Tenho 2 horas livres"].map((q) => (
-              <button key={q} disabled={busy} onClick={() => void send(q)}>
+              <button
+                key={q}
+                disabled={busy || (status !== "live" && status !== "demo")}
+                onClick={() => void send(q)}
+              >
                 {q}
               </button>
             ))}
@@ -91,7 +121,10 @@ export function AIChat({ trip }: { trip: Trip }) {
               aria-label="Mensagem para Voyra AI"
               maxLength={1500}
             />
-            <button disabled={busy || !input.trim()} aria-label="Enviar mensagem">
+            <button
+              disabled={busy || !input.trim() || (status !== "live" && status !== "demo")}
+              aria-label="Enviar mensagem"
+            >
               <ArrowUpRight size={19} />
             </button>
           </form>

@@ -6,19 +6,21 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Clock, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Clock, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useVoyra } from "@/hooks/use-voyra";
 import { Badge, Button, Card, EmptyState, Input, Modal, Select, Tabs } from "@/components/ui";
 import type { Activity, Trip } from "@/types";
 import { money, tripDays, uid } from "@/utils/format";
 const schema = z.object({
+  day: z.number().int().min(1).max(365),
   name: z.string().trim().min(2, "Informe o nome da atividade"),
   time: z.string().regex(/^\d{2}:\d{2}$/, "Informe um horário"),
   category: z.string().min(1),
   duration: z.string().min(1, "Informe a duração"),
   cost: z.number().min(0, "Use um valor positivo"),
   location: z.string().trim().min(2, "Informe o local"),
+  notes: z.string().trim().max(1000, "Use no máximo 1.000 caracteres").optional(),
 });
 type Values = z.infer<typeof schema>;
 export function Itinerary({ trip }: { trip: Trip }) {
@@ -32,8 +34,25 @@ export function Itinerary({ trip }: { trip: Trip }) {
   const currentDay = Number(day.split(" ")[1]);
   const activities = trip.activities
     .filter((a) => a.day === currentDay)
-    .sort((a, b) => a.time.localeCompare(b.time));
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.time.localeCompare(b.time));
   const count = tripDays(trip.start, trip.end);
+  async function move(activity: Activity, direction: -1 | 1) {
+    const ordered = [...activities];
+    const index = ordered.findIndex((item) => item.id === activity.id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ordered.length) return;
+    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+    const orderById = new Map(ordered.map((item, position) => [item.id, position]));
+    if (
+      await saveTrip({
+        ...trip,
+        activities: trip.activities.map((item) =>
+          item.day === currentDay ? { ...item, order: orderById.get(item.id) ?? item.order } : item,
+        ),
+      })
+    )
+      toast.success("Ordem do roteiro atualizada");
+  }
   async function remove() {
     if (!removing) return;
     setBusy(true);
@@ -49,8 +68,8 @@ export function Itinerary({ trip }: { trip: Trip }) {
     <>
       {params.get("clima") === "chuva" && (
         <div className="notice warning" style={{ marginBottom: 20 }}>
-          Previsão simulada de chuva. Edite os horários ou substitua uma atividade por uma opção
-          coberta. Seu roteiro não foi alterado automaticamente.
+          A previsão consultada indicou possibilidade de chuva. Revise os horários ou substitua uma
+          atividade por uma opção coberta. Seu roteiro não foi alterado automaticamente.
         </div>
       )}
       <div className="page-title">
@@ -89,6 +108,10 @@ export function Itinerary({ trip }: { trip: Trip }) {
               <ActivityCard
                 activity={a}
                 tripId={trip.id}
+                canMoveUp={activities[0]?.id !== a.id}
+                canMoveDown={activities.at(-1)?.id !== a.id}
+                onMoveUp={() => void move(a, -1)}
+                onMoveDown={() => void move(a, 1)}
                 onEdit={() => {
                   setEditing(a);
                   setOpen(true);
@@ -122,11 +145,15 @@ export function Itinerary({ trip }: { trip: Trip }) {
         <ActivityForm
           key={editing?.id ?? "new"}
           activity={editing}
+          maximumDay={Math.min(count, 365)}
+          currentDay={currentDay}
           onSave={async (values) => {
             const activity: Activity = {
               ...values,
               id: editing?.id ?? uid(),
-              day: currentDay,
+              order:
+                (editing?.day === values.day ? editing.order : undefined) ??
+                trip.activities.filter((item) => item.day === values.day).length,
               image: editing?.image ?? trip.image,
               source: editing?.source,
             };
@@ -158,11 +185,19 @@ export function ActivityCard({
   tripId,
   onEdit,
   onDelete,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
 }: {
   activity: Activity;
   tripId: string;
   onEdit: () => void;
   onDelete: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
   return (
     <Card className="activity-card">
@@ -178,9 +213,26 @@ export function ActivityCard({
           <Clock size={11} />
           {a.duration}
         </small>
+        {a.notes && <small style={{ marginTop: 6 }}>{a.notes}</small>}
       </div>
       <span className="activity-price">{a.cost ? money(a.cost) : "Gratuito"}</span>
       <div className="activity-actions">
+        <button
+          className="icon-button"
+          aria-label={`Mover ${a.name} para cima`}
+          disabled={!canMoveUp}
+          onClick={onMoveUp}
+        >
+          <ArrowUp />
+        </button>
+        <button
+          className="icon-button"
+          aria-label={`Mover ${a.name} para baixo`}
+          disabled={!canMoveDown}
+          onClick={onMoveDown}
+        >
+          <ArrowDown />
+        </button>
         <button className="icon-button" aria-label={`Editar ${a.name}`} onClick={onEdit}>
           <Pencil />
         </button>
@@ -200,9 +252,13 @@ export function ActivityCard({
 }
 function ActivityForm({
   activity,
+  maximumDay,
+  currentDay,
   onSave,
 }: {
   activity: Activity | null;
+  maximumDay: number;
+  currentDay: number;
   onSave: (values: Values) => Promise<void>;
 }) {
   const {
@@ -212,16 +268,29 @@ function ActivityForm({
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: activity ?? {
+      day: currentDay,
       name: "",
       time: "09:00",
       category: "Passeio",
       duration: "1 hora",
       cost: 0,
       location: "",
+      notes: "",
     },
   });
   return (
     <form className="form-grid" onSubmit={handleSubmit(onSave)}>
+      <div>
+        <Select label="Dia da viagem" {...register("day", { valueAsNumber: true })}>
+          {Array.from({ length: maximumDay }, (_, index) => (
+            <option key={index + 1} value={index + 1}>
+              Dia {index + 1}
+            </option>
+          ))}
+        </Select>
+        {errors.day?.message && <small className="field-error">{errors.day.message}</small>}
+      </div>
+      <span />
       <div className="full">
         <Input label="Nome da atividade" {...register("name")} error={errors.name?.message} />
       </div>
@@ -251,6 +320,11 @@ function ActivityForm({
       <div className="full">
         <Input label="Localização" {...register("location")} error={errors.location?.message} />
       </div>
+      <label className="field full">
+        <span>Observações</span>
+        <textarea rows={3} {...register("notes")} />
+        {errors.notes?.message && <small className="field-error">{errors.notes.message}</small>}
+      </label>
       <Button className="full" type="submit" loading={isSubmitting}>
         Salvar atividade
       </Button>

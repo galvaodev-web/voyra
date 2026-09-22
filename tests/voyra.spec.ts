@@ -120,8 +120,10 @@ test("expenses, documents, participants and AI", async ({ page }) => {
   await page.getByRole("button", { name: "Adicionar participante", exact: true }).click();
   await expect(page.locator(".participant-row").filter({ hasText: "Beatriz" })).toBeVisible();
   await page.getByRole("button", { name: "Voyra AI", exact: true }).click();
-  await page.getByRole("button", { name: "Quero gastar menos hoje" }).click();
-  await expect(page.getByRole("log")).toContainText("Para economizar em Roma");
+  await expect(page.getByRole("log")).toContainText(
+    "A Voyra AI não está configurada neste ambiente.",
+  );
+  await expect(page.getByRole("button", { name: "Quero gastar menos hoje" })).toBeDisabled();
   await page.screenshot({ path: "test-results/trip-desktop.png", fullPage: true });
 });
 test("all pages and mobile layout", async ({ page }) => {

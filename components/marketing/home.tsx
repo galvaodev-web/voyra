@@ -122,7 +122,7 @@ export function Home() {
             ],
             [
               "A Voyra monta o roteiro automaticamente?",
-              "Nesta versão, você monta e edita o roteiro. O chat de IA, o clima e o mapa ilustrativo são demonstrações identificadas na interface.",
+              "Você monta e edita o roteiro. Com os providers configurados, o chat usa IA, o clima vem da WeatherAPI e o mapa localiza seus planos pelo Mapbox.",
             ],
           ].map(([question, answer]) => (
             <details key={question}>

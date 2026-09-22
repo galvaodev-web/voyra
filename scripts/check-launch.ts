@@ -8,12 +8,14 @@ const required = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "SKYSCANNER_MEDIA_PARTNER_ID",
   ...(billingEnabled
     ? ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_PLUS", "STRIPE_PRICE_CREATOR"]
     : []),
   "CRON_SECRET",
   "RATE_LIMIT_SECRET",
+  "OPENAI_API_KEY",
+  "MAPBOX_ACCESS_TOKEN",
+  "WEATHER_API_KEY",
   "NEXT_PUBLIC_TERMS_URL",
   "NEXT_PUBLIC_PRIVACY_URL",
   "NEXT_PUBLIC_SUPPORT_EMAIL",
@@ -112,6 +114,10 @@ async function main() {
       "analytics_events",
       "provider_health",
       "api_rate_limits",
+      "travel_tokens",
+      "account_deletion_jobs",
+      "exchange_rates",
+      "price_alert_matches",
     ]) {
       const { error } = await db.from(table).select("*", { count: "exact", head: true }).limit(0);
       if (error)

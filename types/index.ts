@@ -1,12 +1,14 @@
 export type Activity = {
   id: string;
   day: number;
+  order?: number;
   time: string;
   name: string;
   category: string;
   duration: string;
   cost: number;
   location: string;
+  notes?: string;
   image: string;
   source?: {
     kind: "voyra-social";
@@ -35,6 +37,10 @@ export type TravelDocument = {
   date: string;
   time: string;
   reference: string;
+  company?: string;
+  amount?: number;
+  currency?: string;
+  externalLink?: string;
   file?: string;
   fileName?: string;
 };
@@ -73,6 +79,7 @@ export type Trip = {
   completedAt?: string;
   sourceSearchId?: string;
   searchPreferences?: string[];
+  emergencyContact?: { name: string; phone: string };
 };
 export type Destination = {
   id: string;
