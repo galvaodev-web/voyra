@@ -59,7 +59,7 @@ O `package-lock.json` fixa as versões instaladas. A integração Stripe usa cha
 ## Conectar o Supabase
 
 1. Crie um projeto no Supabase.
-2. Execute **uma vez**, em um projeto novo, `supabase/schema.sql`. Depois aplique, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql`, `20260915_price_engine.sql`, `20260918_web_1_0.sql` e `20260921_mvp_closeout.sql`. Em projetos existentes, aplique somente migrations pendentes; não execute o schema inicial novamente.
+2. Vincule o projeto com a CLI e execute `supabase db push`. A cadeia começa em `supabase/migrations/00000000000000_schema.sql` e segue em ordem de nome; `supabase/schema.sql` permanece apenas como referência consolidada. Em projetos existentes, aplique somente migrations pendentes.
 3. Copie `.env.example` para `.env.local`.
 4. Preencha:
 
@@ -73,6 +73,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-publica-anon
    - a URL equivalente do seu domínio de produção.
 6. Para entrada com Google, ative o provedor em **Authentication → Providers**, configure suas credenciais OAuth no Supabase e no console do Google e defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` antes do build. Caso contrário, o acesso usa e-mail e senha.
 7. Reinicie o servidor Next.js. Crie uma conta pela aplicação e confirme o e-mail se a confirmação estiver ativada.
+
+Para desenvolvimento local real, mantenha o Docker Desktop aberto e execute:
+
+```bash
+npm run supabase:start
+npm run supabase:status
+npm run dev
+```
+
+Use no `.env.local` a API URL, a anon key e a service role exibidas por `npm run supabase:status`. O Studio fica em `http://127.0.0.1:54323` e o Mailpit em `http://127.0.0.1:54324`. `npm run supabase:reset` recria o banco aplicando todas as migrations; `npm run supabase:stop` encerra os serviços locais.
 
 Quando as duas variáveis Supabase estiverem preenchidas, **a entrada de demonstração é desativada** e a aplicação usa contas reais. Contas novas começam sem viagens; os dados fictícios não são inseridos no banco.
 

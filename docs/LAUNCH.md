@@ -8,7 +8,7 @@ Para abrir inicialmente com contas Free, defina `NEXT_PUBLIC_BILLING_ENABLED=fal
 
 Login por e-mail é o fluxo inicial. Só defina `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` depois de configurar e validar o provedor Google. As duas opções são incorporadas no build e exigem novo deploy quando alteradas.
 
-1. Em um projeto novo, execute `supabase/schema.sql` e depois, em ordem, `20260911_launch.sql`, `20260912_marketplace.sql`, `20260915_price_engine.sql`, `20260918_web_1_0.sql` e `20260921_mvp_closeout.sql`. Em projeto existente, execute somente as migrations ainda não aplicadas. Faça backup antes de migrar dados existentes.
+1. Em um projeto novo, execute as migrations em ordem, de `00000000000000_schema.sql` até `20260921_mvp_closeout.sql`, preferencialmente com `supabase db push`. `supabase/schema.sql` é apenas a referência consolidada. Em projeto existente, execute somente as migrations ainda não aplicadas. Faça backup antes de migrar dados existentes.
 2. Configure URL e chave pública, e `SUPABASE_SERVICE_ROLE_KEY` exclusivamente no servidor. Use `.env.example` como referência; nunca publique `.env.local`.
 3. Ative confirmação de e-mail e configure SMTP do seu domínio. Configure limites de autenticação e proteção contra cadastro abusivo no provedor conforme sua operação.
 4. Configure Site URL e redirects exatos para `https://SEU-DOMINIO/auth/callback`. Cadastros e recuperação usam PKCE; teste abrindo o link no mesmo navegador que iniciou o fluxo. Se oferecer Google, configure seu OAuth e o redirect correspondente no Supabase.

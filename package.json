@@ -17,6 +17,10 @@
     "test:billing": "node --conditions=react-server --import tsx scripts/check-billing.ts",
     "check:launch": "tsx scripts/check-launch.ts",
     "build:launch": "npm run check:launch && next build",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -46,6 +50,7 @@
     "eslint-config-next": "^16.0.0",
     "jiti": "^2.7.0",
     "prettier": "^3.9.6",
+    "supabase": "^2.117.0",
     "tailwindcss": "^4.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",

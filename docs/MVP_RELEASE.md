@@ -24,15 +24,16 @@ Opcionais e condicionais: `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN`, `NEXT_PUBLIC_GOOGLE_
 
 ## 6. Migrations necessárias
 
-Em projeto novo, executar `supabase/schema.sql` uma vez e depois, em ordem:
+Em projeto novo, executar as migrations em ordem:
 
-1. `20260911_launch.sql`
-2. `20260912_marketplace.sql`
-3. `20260915_price_engine.sql`
-4. `20260918_web_1_0.sql`
-5. `20260921_mvp_closeout.sql`
+1. `00000000000000_schema.sql`
+2. `20260911_launch.sql`
+3. `20260912_marketplace.sql`
+4. `20260915_price_engine.sql`
+5. `20260918_web_1_0.sql`
+6. `20260921_mvp_closeout.sql`
 
-Depois aplicar as migrations do Voyra Social em ordem. Em banco existente, aplicar apenas as pendentes após backup.
+Depois aplicar as migrations do Voyra Social em ordem. Em banco existente, aplicar apenas as pendentes após backup. `supabase/schema.sql` é uma referência consolidada e não deve ser executado separadamente pela CLI.
 
 ## 7. Testes executados
 

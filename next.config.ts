@@ -5,11 +5,11 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.frankfurter.app https://*.ingest.sentry.io",
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.frankfurter.app https://*.ingest.sentry.io${process.env.NODE_ENV === "development" ? " http://127.0.0.1:54321 ws://127.0.0.1:54321" : ""}`,
   "frame-src https://checkout.stripe.com https://billing.stripe.com",
 ].join("; ");
 const config: NextConfig = {

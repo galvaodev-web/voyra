@@ -27,7 +27,7 @@ Voyra Travel and Social share one Supabase project. Treat PostgreSQL, Auth metad
    ```
 
 3. Recreate private buckets and upload the Storage archive with the original object paths.
-4. Apply only migrations newer than the backup. Never rerun `schema.sql` over an existing restore.
+4. Apply only migrations newer than the backup. Never apply the base migration or consolidated `schema.sql` over an existing restore.
 5. Configure temporary server secrets, expose the `social` schema, and run database/RLS tests plus the staging smoke tests.
 6. Verify counts for users, trips, posts, tokens, passports, referrals and Storage objects. Open sampled signed URLs with disposable test identities.
 7. Destroy the restore environment and record recovery time and discrepancies.

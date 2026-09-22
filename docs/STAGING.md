@@ -3,7 +3,7 @@
 ## Provisionamento
 
 1. Crie um Supabase exclusivo de staging e projetos Vercel separados para Travel e Social em HTTPS.
-2. Execute `supabase/schema.sql` uma vez e as migrations Travel até `20260921_mvp_closeout.sql`; depois aplique todas as migrations Social em ordem.
+2. Execute as migrations Travel em ordem, começando por `00000000000000_schema.sql` e terminando em `20260921_mvp_closeout.sql`; depois aplique todas as migrations Social em ordem. `supabase/schema.sql` é apenas uma referência consolidada.
 3. Mantenha `travel-documents`, `social-images`, `social-videos` e `avatars` privados. Configure `CRON_SECRET` e os três crons de `vercel.json`.
 4. Configure as mesmas URL/anon key Supabase nos dois produtos. Use `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.voyra.com` somente se ambos os hosts forem subdomínios controlados; deixe vazio em hosts `vercel.app` distintos.
 5. Aponte `VOYRA_TRAVEL_API_URL` do Social para a origem Travel. Use Stripe test e contas sintéticas. Configure OpenAI, Mapbox e WeatherAPI com credenciais de staging antes do aceite funcional.

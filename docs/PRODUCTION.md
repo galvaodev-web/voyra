@@ -8,13 +8,15 @@ Use the same Supabase project for Voyra Travel and Voyra Social.
 
 For a new environment, apply the Travel base first, then the launch and marketplace migrations, and only after that apply the Social migrations from the `voyra-social` repository:
 
-1. `supabase/schema.sql`
+1. `supabase/migrations/00000000000000_schema.sql`
 2. `supabase/migrations/20260911_launch.sql`
 3. `supabase/migrations/20260912_marketplace.sql`
 4. `supabase/migrations/20260915_price_engine.sql`
 5. `supabase/migrations/20260918_web_1_0.sql`
 6. `supabase/migrations/20260921_mvp_closeout.sql`
 7. Voyra Social migrations in filename order
+
+`supabase/schema.sql` is the consolidated reference; `supabase db push` uses the migration chain above.
 
 Never disable RLS to fix integration errors.
 
